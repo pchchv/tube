@@ -4,6 +4,7 @@ This module contains a container for the stream manifest data.
 Media stream container object (video only / audio only / video+audio
 combined).
 """
+import logging
 import datetime
 from math import ceil
 from urllib import HTTPError
@@ -13,6 +14,9 @@ from tube.monostate import Monostate
 from tube.helpers import safe_filename
 from typing import Dict, Optional, Tuple
 from tube.itags import get_format_profile
+
+
+logger = logging.getLogger(__name__)
 
 
 class Stream:
@@ -244,3 +248,80 @@ class Stream:
         """
         filename = safe_filename(self.title)
         return f"{filename}.{self.subtype}"
+
+    def download(
+        self,
+        output_path: Optional[str] = None,
+        filename: Optional[str] = None,
+        filename_prefix: Optional[str] = None,
+        skip_existing: bool = True,
+        timeout: Optional[int] = None,
+        max_retries: Optional[int] = 0
+    ) -> str:
+        """Write the media stream to disk.
+    :param output_path: (optional) The output path for writing the media file.
+        If it is not specified,
+        the current working directory is used by default.
+    :type output_path: str or None
+    :param filename: (optional) The name of the output file
+        (stem only) for media file recording.
+        If no name is specified, the default name is used.
+    :type filename: str or None
+    :param filename_prefix: (optional) The string to be added to the filename.
+        For example, a number in a playlist or a series name.
+        If no string is specified, nothing will be added.
+        This parameter is separate from the filename,
+        so you can use the default filename but add a prefix.
+    :type filename_prefix: str or None
+    :param skip_existing: (optional) Skip existing files, defaults to True
+    :type skip_existing: bool
+    :param timeout: (Optional) Request timeout time in seconds.
+        The system default is used.
+    :type timeout: int
+    :param max_retries: (optional) The number of retries after a
+        socket timeout. Defaults to 0.
+    :type max_retries: int
+    :return: The path to the stored video.
+    :rtype: str
+        """
+        file_path = self.get_file_path(
+            filename=filename,
+            output_path=output_path,
+            filename_prefix=filename_prefix,
+        )
+
+        if skip_existing and self.exists_at_path(file_path):
+            logger.debug(f'file {file_path} already exists, skipping')
+            self.on_complete(file_path)
+            return file_path
+
+        bytes_remaining = self.filesize
+        logger.debug(
+            f'downloading ({self.filesize} total bytes) file to {file_path}')
+
+        with open(file_path, "wb") as fh:
+            try:
+                for chunk in request.stream(
+                    self.url,
+                    timeout=timeout,
+                    max_retries=max_retries
+                ):
+                    # reduce the remainder (bytes) by the chunk length.
+                    bytes_remaining -= len(chunk)
+                    # send to the on_progress callback.
+                    self.on_progress(chunk, fh, bytes_remaining)
+            except HTTPError as e:
+                if e.code != 404:
+                    raise
+                # Some adaptive threads must be queried with ordinal numbers
+                for chunk in request.seq_stream(
+                    self.url,
+                    timeout=timeout,
+                    max_retries=max_retries
+                ):
+                    # reduce the remainder (bytes) by the chunk length.
+                    bytes_remaining -= len(chunk)
+                    # send to the on_progress callback.
+                    self.on_progress(chunk, fh, bytes_remaining)
+        self.on_complete(file_path)
+        return file_path
