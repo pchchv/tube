@@ -10,6 +10,7 @@ from urllib import HTTPError
 from urllib.parse import parse_qs
 from tube import extract, request
 from tube.monostate import Monostate
+from tube.helpers import safe_filename
 from typing import Dict, Optional, Tuple
 from tube.itags import get_format_profile
 
@@ -233,3 +234,13 @@ class Stream:
     def expiration(self) -> datetime:
         expire = parse_qs(self.url.split("?")[1])["expire"][0]
         return datetime.utcfromtimestamp(int(expire))
+
+    @property
+    def default_filename(self) -> str:
+        """Generate filename based on the video title.
+        :rtype: str
+        :returns:
+            An os file system compatible filename.
+        """
+        filename = safe_filename(self.title)
+        return f"{filename}.{self.subtype}"
