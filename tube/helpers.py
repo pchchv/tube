@@ -1,6 +1,8 @@
 """Various helper functions implemented by tube."""
 import re
+import os
 import logging
+from typing import Optional
 from tube.exceptions import RegexMatchError
 
 
@@ -65,3 +67,20 @@ def safe_filename(s: str, max_length: int = 255) -> str:
     regex = re.compile(pattern, re.UNICODE)
     filename = regex.sub("", s)
     return filename[:max_length].rsplit(" ", 0)[0]
+
+
+def target_directory(output_path: Optional[str] = None) -> str:
+    """Function to determine the target directory to load.
+    Returns absolute path (if relative) or current path (if none).
+    Creates a directory if it does not exist.
+    :type output_path: str
+    :rtype: str
+    :return: Absolute path to the directory as a string.
+    """
+    if output_path:
+        if not os.path.isabs(output_path):
+            output_path = os.path.join(os.getcwd(), output_path)
+    else:
+        output_path = os.getcwd()
+    os.makedirs(output_path, exist_ok=True)
+    return output_path
