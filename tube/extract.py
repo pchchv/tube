@@ -44,3 +44,16 @@ def mime_type_codec(mime_type_codec: str) -> Tuple[str, List[str]]:
         raise RegexMatchError(caller="mime_type_codec", pattern=pattern)
     mime_type, codecs = results.groups()
     return mime_type, [c.strip() for c in codecs.split(",")]
+
+
+def video_id(url: str) -> str:
+    """Extract the ``video_id`` from a YouTube url.
+    This function supports the following patterns:
+    - :samp:`https://youtube.com/watch?v={video_id}`
+    - :samp:`https://youtube.com/embed/{video_id}`
+    - :samp:`https://youtu.be/{video_id}`
+    :param str url: A YouTube url containing a video id.
+    :rtype: str
+    :returns: YouTube video id.
+    """
+    return regex_search(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", url, group=1)
