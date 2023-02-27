@@ -28,3 +28,40 @@ def regex_search(pattern: str, string: str, group: int) -> str:
     logger.debug("matched regex search: %s", pattern)
 
     return results.group(group)
+
+
+def safe_filename(s: str, max_length: int = 255) -> str:
+    """Sanitizes a string, making it safe to use as a filename.
+    :param str s: The string to be made safe for use as a filename.
+    :param int max_length: Maximum character length of the filename.
+    :rtype: str
+    :return: The sanitized string.
+    """
+    # Characters in range 0-31 (0x00-0x1F) are not allowed in ntfs filenames.
+    ntfs_characters = [chr(i) for i in range(0, 31)]
+    characters = [
+        r'"',
+        r"\#",
+        r"\$",
+        r"\%",
+        r"'",
+        r"\*",
+        r"\,",
+        r"\.",
+        r"\/",
+        r"\:",
+        r'"',
+        r"\;",
+        r"\<",
+        r"\>",
+        r"\?",
+        r"\\",
+        r"\^",
+        r"\|",
+        r"\~",
+        r"\\\\",
+    ]
+    pattern = "|".join(ntfs_characters + characters)
+    regex = re.compile(pattern, re.UNICODE)
+    filename = regex.sub("", s)
+    return filename[:max_length].rsplit(" ", 0)[0]
