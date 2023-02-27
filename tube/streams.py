@@ -82,3 +82,19 @@ class Stream:
         self.is_3d = itag_profile["is_3d"]
         self.is_hdr = itag_profile["is_hdr"]
         self.is_live = itag_profile["is_live"]
+
+    @property
+    def is_adaptive(self) -> bool:
+        """Whether the stream is DASH.
+        :rtype: bool
+        """
+        # if codecs has two elements (e.g.: ['vp8', 'vorbis']): 2 % 2 = 0
+        # if codecs has one element (e.g.: ['vp8']) 1 % 2 = 1
+        return bool(len(self.codecs) % 2)
+
+    @property
+    def is_progressive(self) -> bool:
+        """Whether the stream is progressive.
+        :rtype: bool
+        """
+        return not self.is_adaptive
