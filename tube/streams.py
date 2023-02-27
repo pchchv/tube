@@ -5,7 +5,8 @@ Media stream container object (video only / audio only / video+audio
 combined).
 """
 from math import ceil
-from tube import extract
+from tube import extract, request
+from urllib import HTTPError
 from tube.monostate import Monostate
 from typing import Dict, Optional, Tuple
 from tube.itags import get_format_profile
@@ -131,3 +132,39 @@ class Stream:
         elif self.includes_audio_track:
             audio = self.codecs[0]
         return video, audio
+
+    @property
+    def filesize(self) -> int:
+        """File size of the media stream in bytes.
+        :rtype: int
+        :returns:
+            Filesize (in bytes) of the stream.
+        """
+        if self._filesize == 0:
+            try:
+                self._filesize = request.filesize(self.url)
+            except HTTPError as e:
+                if e.code != 404:
+                    raise
+                self._filesize = request.seq_filesize(self.url)
+        return self._filesize
+
+    @property
+    def filesize_kb(self) -> float:
+        """File size of the media stream in kilobytes.
+        :rtype: float
+        :returns:
+            Rounded filesize (in kilobytes) of the stream.
+        """
+        if self._filesize_kb == 0:
+            try:
+                self._filesize_kb = float(
+                    ceil(request.filesize(self.url)/1024 * 1000) / 1000
+                )
+            except HTTPError as e:
+                if e.code != 404:
+                    raise
+                self._filesize_kb = float(
+                    ceil(request.seq_filesize(self.url)/1024 * 1000) / 1000
+                )
+        return self._filesize_kb
