@@ -98,3 +98,17 @@ class Stream:
         :rtype: bool
         """
         return not self.is_adaptive
+
+    @property
+    def includes_audio_track(self) -> bool:
+        """Whether the stream only contains audio.
+        :rtype: bool
+        """
+        return self.is_progressive or self.type == "audio"
+
+    @property
+    def includes_video_track(self) -> bool:
+        """Whether the stream only contains video.
+        :rtype: bool
+        """
+        return self.is_progressive or self.type == "video"
