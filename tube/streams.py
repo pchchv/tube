@@ -6,9 +6,9 @@ combined).
 """
 import os
 import logging
-import datetime
 from math import ceil
 from urllib import HTTPError
+from datetime import datetime
 from urllib.parse import parse_qs
 from tube import extract, request
 from tube.monostate import Monostate
@@ -395,3 +395,22 @@ class Stream:
         if on_complete:
             logger.debug("calling on_complete callback %s", on_complete)
             on_complete(self, file_path)
+
+    def __repr__(self) -> str:
+        """Printed representation of the object.
+        :rtype: str
+        :return: String representation of object :class:`Stream <Stream>'.
+        """
+        parts = ['itag="{s.itag}"', 'mime_type="{s.mime_type}"']
+        if self.includes_video_track:
+            parts.extend(['res="{s.resolution}"', 'fps="{s.fps}fps"'])
+            if not self.is_adaptive:
+                parts.extend(
+                    ['vcodec="{s.video_codec}"', 'acodec="{s.audio_codec}"',]
+                )
+            else:
+                parts.extend(['vcodec="{s.video_codec}"'])
+        else:
+            parts.extend(['abr="{s.abr}"', 'acodec="{s.audio_codec}"'])
+        parts.extend(['progressive="{s.is_progressive}"', 'type="{s.type}"'])
+        return f"<Stream: {' '.join(parts).format(s=self)}>"
