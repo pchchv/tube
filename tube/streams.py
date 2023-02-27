@@ -12,8 +12,8 @@ from urllib import HTTPError
 from urllib.parse import parse_qs
 from tube import extract, request
 from tube.monostate import Monostate
-from typing import Dict, Optional, Tuple
 from tube.itags import get_format_profile
+from typing import Dict, Optional, Tuple, BinaryIO
 from tube.helpers import safe_filename, target_directory
 
 
@@ -344,3 +344,19 @@ class Stream:
             os.path.isfile(file_path)
             and os.path.getsize(file_path) == self.filesize
         )
+
+    def stream_to_buffer(self, buffer: BinaryIO) -> None:
+        """Write the media stream to buffer
+        :rtype: io.BytesIO buffer
+        """
+        bytes_remaining = self.filesize
+        logger.info(
+            "downloading (%s total bytes) file to buffer", self.filesize,
+        )
+
+        for chunk in request.stream(self.url):
+            # reduce the (bytes) remainder by the length of the chunk
+            bytes_remaining -= len(chunk)
+            # send to the on_progress callback
+            self.on_progress(chunk, buffer, bytes_remaining)
+        self.on_complete(None)
