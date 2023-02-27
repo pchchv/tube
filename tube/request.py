@@ -1,8 +1,11 @@
 """Implements a simple wrapper around urlopen."""
 import json
 import socket
+from urllib import parse
 from functools import lru_cache
-from urllib3.request import Request, urlopen
+from tube.helpers import regex_search
+from tube.exceptions import RegexMatchError
+from urllib.request import Request, urlopen
 
 
 def _execute_request(
@@ -33,6 +36,59 @@ def filesize(url):
     :return: int: size in bytes of the deleted file
     """
     return int(head(url)["content-length"])
+
+
+@lru_cache()
+def seq_filesize(url):
+    """Fetch file size in bytes from a given URL from consecutive requests
+    :param str url: URL for getting the size
+    :return: int: size in bytes of the deleted file
+    """
+    total_filesize = 0
+    # YouTube expects a request sequence number as part of the parameters.
+    split_url = parse.urlsplit(url)
+    base_url = '%s://%s/%s?' \
+        % (split_url.scheme, split_url.netloc, split_url.path)
+    querys = dict(parse.parse_qsl(split_url.query))
+
+    # The 0th sequential query provides file headers that
+    # tell us information about how the file is segmented.
+    querys['sq'] = 0
+    url = base_url + parse.urlencode(querys)
+    response = _execute_request(
+        url, method="GET"
+    )
+
+    response_value = response.read()
+    # The file header must be added to the total filesize
+    total_filesize += len(response_value)
+
+    # Then parsing the header to find the number of segments
+    segment_count = 0
+    stream_info = response_value.split(b'\r\n')
+    segment_regex = b'Segment-Count: (\\d+)'
+    for line in stream_info:
+        # One of the lines should contain the segment count, but we don't know
+        #  which, so we need to iterate through the lines to find it
+        try:
+            segment_count = int(regex_search(segment_regex, line, 1))
+        except RegexMatchError:
+            pass
+
+    if segment_count == 0:
+        raise RegexMatchError('seq_filesize', segment_regex)
+
+    # Make HEAD requests to the segments one by one to
+    # find out the total size of the files.
+    seq_num = 1
+    while seq_num <= segment_count:
+        # Create sequential request URL
+        querys['sq'] = seq_num
+        url = base_url + parse.urlencode(querys)
+
+        total_filesize += int(head(url)['content-length'])
+        seq_num += 1
+    return total_filesize
 
 
 def head(url):
