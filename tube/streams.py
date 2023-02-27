@@ -4,10 +4,10 @@ This module contains a container for the stream manifest data.
 Media stream container object (video only / audio only / video+audio
 combined).
 """
-from tube import extract
 from math import ceil
-from typing import Dict, Optional
+from tube import extract
 from tube.monostate import Monostate
+from typing import Dict, Optional, Tuple
 from tube.itags import get_format_profile
 
 
@@ -112,3 +112,22 @@ class Stream:
         :rtype: bool
         """
         return self.is_progressive or self.type == "video"
+
+    def parse_codecs(self) -> Tuple[Optional[str], Optional[str]]:
+        """Get video/audio codecs from codec list.
+        Parses the list of codecs of variable length and returns a
+        constant tuple of two elements, where video codec is
+        the first element and audio is the second.
+        Returns None if no codec is available (adaptive only).
+        :rtype: tuple
+        :return: A tuple of two elements with audio and video codecs.
+        """
+        video = None
+        audio = None
+        if not self.is_adaptive:
+            video, audio = self.codecs
+        elif self.includes_video_track:
+            video = self.codecs[0]
+        elif self.includes_audio_track:
+            audio = self.codecs[0]
+        return video, audio
