@@ -4,6 +4,7 @@ This module contains a container for the stream manifest data.
 Media stream container object (video only / audio only / video+audio
 combined).
 """
+import os
 import logging
 import datetime
 from math import ceil
@@ -11,9 +12,9 @@ from urllib import HTTPError
 from urllib.parse import parse_qs
 from tube import extract, request
 from tube.monostate import Monostate
-from tube.helpers import safe_filename
 from typing import Dict, Optional, Tuple
 from tube.itags import get_format_profile
+from tube.helpers import safe_filename, target_directory
 
 
 logger = logging.getLogger(__name__)
@@ -325,3 +326,21 @@ class Stream:
                     self.on_progress(chunk, fh, bytes_remaining)
         self.on_complete(file_path)
         return file_path
+
+    def get_file_path(
+        self,
+        filename: Optional[str] = None,
+        output_path: Optional[str] = None,
+        filename_prefix: Optional[str] = None,
+    ) -> str:
+        if not filename:
+            filename = self.default_filename
+        if filename_prefix:
+            filename = f"{filename_prefix}{filename}"
+        return os.path.join(target_directory(output_path), filename)
+
+    def exists_at_path(self, file_path: str) -> bool:
+        return (
+            os.path.isfile(file_path)
+            and os.path.getsize(file_path) == self.filesize
+        )
