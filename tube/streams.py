@@ -360,3 +360,38 @@ class Stream:
             # send to the on_progress callback
             self.on_progress(chunk, buffer, bytes_remaining)
         self.on_complete(None)
+
+    def on_progress(
+        self, chunk: bytes, file_handler: BinaryIO, bytes_remaining: int
+    ):
+        """The callback function at runtime.
+        This function writes binary data to a file,
+        then checks to see if an additional callback is defined in monostate.
+        This is expanded to display a runtime indicator.
+            :param bytes Chunk: The binary data segment of
+                the media file not yet written to disk.
+            :param file_handler: The file handler where the
+                media file is written to.
+            :type file_handler:
+                :py:class:`io.BufferedWriter`.
+            :param int bytes_remaining: The delta between the
+                total file size in bytes and the amount already loaded.
+            :rtype: None
+        """
+        file_handler.write(chunk)
+        logger.debug("download remaining: %s", bytes_remaining)
+        if self._monostate.on_progress:
+            self._monostate.on_progress(self, chunk, bytes_remaining)
+
+    def on_complete(self, file_path: Optional[str]):
+        """When loaded, the full handler function.
+        :param file_path:
+            The name of the file where the media file is written to.
+        :type file_path: str
+        :rtype: None
+        """
+        logger.debug("download finished")
+        on_complete = self._monostate.on_complete
+        if on_complete:
+            logger.debug("calling on_complete callback %s", on_complete)
+            on_complete(self, file_path)
