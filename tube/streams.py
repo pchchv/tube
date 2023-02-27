@@ -159,12 +159,50 @@ class Stream:
         if self._filesize_kb == 0:
             try:
                 self._filesize_kb = float(
-                    ceil(request.filesize(self.url)/1024 * 1000) / 1000
-                )
+                    ceil(request.filesize(self.url)/1024 * 1000) / 1000)
             except HTTPError as e:
                 if e.code != 404:
                     raise
                 self._filesize_kb = float(
-                    ceil(request.seq_filesize(self.url)/1024 * 1000) / 1000
-                )
+                    ceil(request.seq_filesize(self.url)/1024 * 1000) / 1000)
         return self._filesize_kb
+
+    @property
+    def filesize_mb(self) -> float:
+        """File size of the media stream in megabytes.
+        :rtype: float
+        :returns:
+            Rounded filesize (in megabytes) of the stream.
+        """
+        if self._filesize_mb == 0:
+            try:
+                self._filesize_mb = float(
+                    ceil(request
+                         .filesize(self.url)/1024/1024 * 1000) / 1000)
+            except HTTPError as e:
+                if e.code != 404:
+                    raise
+                self._filesize_mb = float(
+                    ceil(request
+                         .seq_filesize(self.url)/1024/1024 * 1000) / 1000)
+        return self._filesize_mb
+
+    @property
+    def filesize_gb(self) -> float:
+        """File size of the media stream in gigabytes.
+        :rtype: float
+        :returns:
+            Rounded filesize (in gigabytes) of the stream.
+        """
+        if self._filesize_gb == 0:
+            try:
+                self._filesize_gb = float(
+                    ceil(request
+                         .filesize(self.url)/1024/1024/1024 * 1000) / 1000)
+            except HTTPError as e:
+                if e.code != 404:
+                    raise
+                self._filesize_gb = float(
+                    ceil(request
+                         .seq_filesize(self.url)/1024/1024/1024 * 1000) / 1000)
+        return self._filesize_gb
