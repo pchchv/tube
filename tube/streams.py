@@ -4,9 +4,11 @@ This module contains a container for the stream manifest data.
 Media stream container object (video only / audio only / video+audio
 combined).
 """
+import datetime
 from math import ceil
-from tube import extract, request
 from urllib import HTTPError
+from urllib.parse import parse_qs
+from tube import extract, request
 from tube.monostate import Monostate
 from typing import Dict, Optional, Tuple
 from tube.itags import get_format_profile
@@ -137,8 +139,7 @@ class Stream:
     def filesize(self) -> int:
         """File size of the media stream in bytes.
         :rtype: int
-        :returns:
-            Filesize (in bytes) of the stream.
+        :returns: Filesize (in bytes) of the stream.
         """
         if self._filesize == 0:
             try:
@@ -153,8 +154,7 @@ class Stream:
     def filesize_kb(self) -> float:
         """File size of the media stream in kilobytes.
         :rtype: float
-        :returns:
-            Rounded filesize (in kilobytes) of the stream.
+        :returns: Rounded filesize (in kilobytes) of the stream.
         """
         if self._filesize_kb == 0:
             try:
@@ -171,8 +171,7 @@ class Stream:
     def filesize_mb(self) -> float:
         """File size of the media stream in megabytes.
         :rtype: float
-        :returns:
-            Rounded filesize (in megabytes) of the stream.
+        :returns: Rounded filesize (in megabytes) of the stream.
         """
         if self._filesize_mb == 0:
             try:
@@ -191,8 +190,7 @@ class Stream:
     def filesize_gb(self) -> float:
         """File size of the media stream in gigabytes.
         :rtype: float
-        :returns:
-            Rounded filesize (in gigabytes) of the stream.
+        :returns: Rounded filesize (in gigabytes) of the stream.
         """
         if self._filesize_gb == 0:
             try:
@@ -206,3 +204,32 @@ class Stream:
                     ceil(request
                          .seq_filesize(self.url)/1024/1024/1024 * 1000) / 1000)
         return self._filesize_gb
+
+    @property
+    def title(self) -> str:
+        """Get title of video
+        :rtype: str
+        :returns: Youtube video title
+        """
+        return self._monostate.title or "Unknown YouTube Video Title"
+
+    @property
+    def filesize_approx(self) -> int:
+        """Get approximate filesize of the video
+        Falls back to HTTP call if there is
+        not sufficient information to approximate
+        :rtype: int
+        :returns: size of video in bytes
+        """
+        if self._monostate.duration and self.bitrate:
+            bits_in_byte = 8
+            return int(
+                (self._monostate.duration * self.bitrate) / bits_in_byte
+            )
+
+        return self.filesize
+
+    @property
+    def expiration(self) -> datetime:
+        expire = parse_qs(self.url.split("?")[1])["expire"][0]
+        return datetime.utcfromtimestamp(int(expire))
