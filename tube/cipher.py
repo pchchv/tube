@@ -105,3 +105,42 @@ def get_transform_object(js: str, var: str) -> List[str]:
         raise RegexMatchError(caller="get_transform_object", pattern=pattern)
 
     return transform_match.group(1).replace("\n", " ").split(", ")
+
+
+def reverse(arr: List, _: Optional[Any]):
+    """Reverse elements in a list.
+    This function is equivalent to:
+    .. code-block:: javascript
+        function(a, b) { a.reverse() }
+    This method takes an unused ``b`` variable as their transform functions
+    universally sent two arguments.
+    **Example**:
+    >>> reverse([1, 2, 3, 4])
+    [4, 3, 2, 1]
+    """
+    return arr[::-1]
+
+
+def splice(arr: List, b: int):
+    """Add/remove items to/from a list.
+    This function is equivalent to:
+    .. code-block:: javascript
+        function(a, b) { a.splice(0, b) }
+    **Example**:
+    >>> splice([1, 2, 3, 4], 2)
+    [1, 2]
+    """
+    return arr[b:]
+
+
+def swap(arr: List, b: int):
+    """Swap positions at b modulus the list length.
+    This function is equivalent to:
+    .. code-block:: javascript
+        function(a, b) { var c=a[0];a[0]=a[b%a.length];a[b]=c }
+    **Example**:
+    >>> swap([1, 2, 3, 4], 2)
+    [3, 2, 1, 4]
+    """
+    r = b % len(arr)
+    return list(chain([arr[r]], arr[1:r], [arr[0]], arr[r + 1:]))
