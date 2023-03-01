@@ -1,9 +1,14 @@
 """This module contains all non-cipher related data extraction logic."""
 import re
+import logging
 from datetime import datetime
-from typing import Tuple, List
+from typing import Any, Tuple, List
 from tube.helpers import regex_search
-from tube.exceptions import RegexMatchError
+from tube.parser import parse_for_object
+from tube.exceptions import RegexMatchError, HTMLParseError
+
+
+logger = logging.getLogger(__name__)
 
 
 def publish_date(watch_html: str):
@@ -135,3 +140,15 @@ def get_ytplayer_config(html: str) -> Any:
         caller="get_ytplayer_config",
         pattern="config_patterns, setconfig_patterns"
     )
+
+
+def js_url(html: str) -> str:
+    """Get a basic JavaScript url.
+    Construct a basic JavaScript url that contains the transcript "transforms".
+    :param str html: html-content of the view page.
+    """
+    try:
+        base_js = get_ytplayer_config(html)['assets']['js']
+    except (KeyError, RegexMatchError):
+        base_js = get_ytplayer_js(html)
+    return "https://youtube.com" + base_js
