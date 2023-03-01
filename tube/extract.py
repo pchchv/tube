@@ -2,9 +2,10 @@
 import re
 import logging
 from datetime import datetime
-from typing import Any, Tuple, List
+from urllib.parse import parse_qs
 from tube.helpers import regex_search
 from tube.parser import parse_for_object
+from typing import Any, Dict, Tuple, List
 from tube.exceptions import RegexMatchError, HTMLParseError
 
 
@@ -173,3 +174,34 @@ def initial_data(watch_html: str) -> str:
 
     raise RegexMatchError(caller='initial_data',
                           pattern='initial_data_pattern')
+
+
+def apply_descrambler(stream_data: Dict) -> None:
+    """Applies various in situ transformations to YouTube media stream data.
+    Creates a ``list'' of dictionaries by splitting lines with commas,
+    then takes each element in the list, parses it as a query string,
+    converts it to ``dict'' and unfolds the value.
+    :param dict stream_data:
+        A dictionary containing the encoded values of the query string.
+    """
+    if 'url' in stream_data:
+        return None
+
+    # Merge formats and adaptiveFormats into a single list
+    formats = []
+    if 'formats' in stream_data.keys():
+        formats.extend(stream_data['formats'])
+    if 'adaptiveFormats' in stream_data.keys():
+        formats.extend(stream_data['adaptiveFormats'])
+
+    # Extract url and s from signatureCiphers as necessary
+    for data in formats:
+        if 'url' not in data:
+            if 'signatureCipher' in data:
+                cipher_url = parse_qs(data['signatureCipher'])
+                data['url'] = cipher_url['url'][0]
+                data['s'] = cipher_url['s'][0]
+        data['is_otf'] = data.get('type') == 'FORMAT_STREAM_TYPE_OTF'
+
+    logger.debug("applying descrambler")
+    return formats
