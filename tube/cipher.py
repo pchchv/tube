@@ -15,7 +15,8 @@ and getting the encrypted signature and decoding it.
 """
 import re
 import logging
-from typing import List, Dict
+from itertools import chain
+from typing import Any, List, Dict, Callable, Optional
 from tube.helpers import regex_search
 from tube.exceptions import RegexMatchError
 
@@ -105,6 +106,49 @@ def get_transform_object(js: str, var: str) -> List[str]:
         raise RegexMatchError(caller="get_transform_object", pattern=pattern)
 
     return transform_match.group(1).replace("\n", " ").split(", ")
+
+
+def get_transform_map(js: str, var: str) -> Dict:
+    """Build a lookup table for conversion functions.
+    Build a lookup table for obfuscated JavaScript function names and
+    their equivalents in Python.
+    :param str js: Contents of the base.js asset file.
+    :param str var: The obfuscated variable name in which
+    the object with all functions is stored that decrypt the signature.
+    """
+    transform_object = get_transform_object(js, var)
+    mapper = {}
+    for obj in transform_object:
+        # AJ:function(a){a.reverse()} => AJ, function(a){a.reverse()}
+        name, function = obj.split(":", 1)
+        fn = map_functions(function)
+        mapper[name] = fn
+    return mapper
+
+
+def map_functions(js_func: str) -> Callable:
+    """For a given JavaScript transform function, return the Python equivalent.
+    :param str js_func: The JavaScript version of the transform function.
+    """
+    mapper = (
+        # function(a){a.reverse()}
+        (r"{\w\.reverse\(\)}", reverse),
+        # function(a,b){a.splice(0,b)}
+        (r"{\w\.splice\(0,\w\)}", splice),
+        # function(a,b){var c=a[0];a[0]=a[b%a.length];a[b]=c}
+        (r"{var\s\w=\w\[0\];\w\[0\]=\w\[\w\%\w.length\];\w\[\w\]=\w}", swap),
+        # function(a,b){var c=a[0];a[0]=a[b%a.length];a[b%a.length]=c}
+        (
+            r"{var\s\w=\w\[0\];\w\[0\]=\w\[\w\%\w.\
+                length\];\w\[\w\%\w.length\]=\w}",
+            swap,
+        ),
+    )
+
+    for pattern, fn in mapper:
+        if re.search(pattern, js_func):
+            return fn
+    raise RegexMatchError(caller="map_functions", pattern="multiple")
 
 
 def reverse(arr: List, _: Optional[Any]):
