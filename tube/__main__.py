@@ -147,3 +147,19 @@ class YouTube:
             self._js = tube.__js__
 
         return self._js
+
+    @property
+    def initial_data(self):
+        if self._initial_data:
+            return self._initial_data
+        self._initial_data = extract.initial_data(self.watch_html)
+        return self._initial_data
+
+    @property
+    def streaming_data(self):
+        """Return streamingData from video info."""
+        if 'streamingData' in self.vid_info:
+            return self.vid_info['streamingData']
+        else:
+            self.bypass_age_gate()
+            return self.vid_info['streamingData']
