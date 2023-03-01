@@ -15,6 +15,7 @@ and getting the encrypted signature and decoding it.
 """
 import re
 import logging
+from tube.helpers import regex_search
 
 
 logger = logging.getLogger(__name__)
@@ -53,3 +54,25 @@ def get_initial_function_name(js: str) -> str:
     raise RegexMatchError(
         caller="get_initial_function_name", pattern="multiple"
     )
+
+
+def get_transform_plan(js: str) -> List[str]:
+    """Extract the "transformation plan".
+    The "conversion plan" is the functions through
+    which theencrypted signature passes.
+    which the encrypted signature goes through to get the real signature.
+    :param str js: The contents of the base.js asset file.
+    **Example**:
+    ['DE.AJ(a,15)',
+    'DE.VR(a,3)',
+    'DE.AJ(a,51)',
+    'DE.VR(a,3)',
+    'DE.kT(a,51)',
+    'DE.kT(a,8)',
+    'DE.VR(a,3)',
+    'DE.kT(a,21)']
+    """
+    name = re.escape(get_initial_function_name(js))
+    pattern = r"%s=function\(\w\){[a-z=\.\(\"\)]*;(.*);(?:.+)}" % name
+    logger.debug("getting transform plan")
+    return regex_search(pattern, js, group=1).split(";")
