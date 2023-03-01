@@ -57,3 +57,16 @@ def video_id(url: str) -> str:
     :returns: YouTube video id.
     """
     return regex_search(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", url, group=1)
+
+
+def is_age_restricted(watch_html: str) -> bool:
+    """Checks if the content is age restricted.
+    :param str watch_html: The html content of the watch page.
+    :rtype: bool
+    :returns: Whether the page content is age restricted or not.
+    """
+    try:
+        regex_search(r"og:restrictions:age", watch_html, group=0)
+    except RegexMatchError:
+        return False
+    return True
