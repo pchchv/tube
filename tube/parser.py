@@ -1,3 +1,4 @@
+import re
 import ast
 import json
 from tube.exceptions import HTMLParseError
@@ -71,3 +72,19 @@ def find_object_from_startpoint(html, start_point):
 
     full_obj = html[:i]
     return full_obj  # noqa: R504
+
+
+def parse_for_object(html, preceding_regex):
+    """Parses the input html to find the end of the JavaScript object.
+    :param str html: HTML to parse the object.
+    :param str preceding_regex: Regex to find the string preceding the object.
+    :rtype dict:
+    :returns: The dict created by parsing the object.
+    """
+    regex = re.compile(preceding_regex)
+    result = regex.search(html)
+    if not result:
+        raise HTMLParseError(f'No matches for regex {preceding_regex}')
+
+    start_index = result.end()
+    return parse_for_object_from_startpoint(html, start_index)
