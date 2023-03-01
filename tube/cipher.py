@@ -15,7 +15,9 @@ and getting the encrypted signature and decoding it.
 """
 import re
 import logging
+from typing import List, Dict
 from tube.helpers import regex_search
+from tube.exceptions import RegexMatchError
 
 
 logger = logging.getLogger(__name__)
@@ -76,3 +78,30 @@ def get_transform_plan(js: str) -> List[str]:
     pattern = r"%s=function\(\w\){[a-z=\.\(\"\)]*;(.*);(?:.+)}" % name
     logger.debug("getting transform plan")
     return regex_search(pattern, js, group=1).split(";")
+
+
+def get_transform_object(js: str, var: str) -> List[str]:
+    """Extract the "transformation object".
+    The "conversion object" contains the definitions of
+    the functions referenced in the ``conversion plan``.
+    The argument ``var`` is an obfuscated variable name.
+    which contains these functions, e.g., given a call to the function
+    ``DE.AJ(a,15)`` returned by the conversion plan,
+    the variable would be "DE".
+    :param str js: The contents of the base.js asset file.
+    :param str var: The obfuscated name of the variable that holds
+    the object with all the functions that decrypt the signature.
+    **Example**:
+    >>> get_transform_object(js, 'DE')
+    ['AJ:function(a){a.reverse()}',
+    'VR:function(a,b){a.splice(0,b)}',
+    'kT:function(a,b){var c=a[0];a[0]=a[b%a.length];a[b]=c}']
+    """
+    pattern = r"var %s={(.*?)};" % re.escape(var)
+    logger.debug("getting transform object")
+    regex = re.compile(pattern, flags=re.DOTALL)
+    transform_match = regex.search(js)
+    if not transform_match:
+        raise RegexMatchError(caller="get_transform_object", pattern=pattern)
+
+    return transform_match.group(1).replace("\n", " ").split(", ")
