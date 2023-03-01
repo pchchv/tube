@@ -27,3 +27,7 @@ class RegexMatchError(ExtractError):
         super().__init__(f"{caller}: could not find match for {pattern}")
         self.caller = caller
         self.pattern = pattern
+
+
+class HTMLParseError(TubeError):
+    """HTML could not be parsed"""
