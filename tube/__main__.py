@@ -5,7 +5,7 @@ focuses almost exclusively on the developer interface.
 Tube offloads all the hard work to smaller peripheral modules and functions.
 
 """
-from tube import Stream, extract
+from tube import Stream, extract, request
 from tube.monostate import Monostate
 from tube.helpers import install_proxy
 from tube.metadata import YouTubeMetadata
@@ -96,3 +96,24 @@ class YouTube:
         # return true,
         # else return false.
         return type(obj) == type(self) and obj.watch_url == self.watch_url
+
+    @property
+    def watch_html(self):
+        if self._watch_html:
+            return self._watch_html
+        self._watch_html = request.get(url=self.watch_url)
+        return self._watch_html
+
+    @property
+    def embed_html(self):
+        if self._embed_html:
+            return self._embed_html
+        self._embed_html = request.get(url=self.embed_url)
+        return self._embed_html
+
+    @property
+    def age_restricted(self):
+        if self._age_restricted:
+            return self._age_restricted
+        self._age_restricted = extract.is_age_restricted(self.watch_html)
+        return self._age_restricted
