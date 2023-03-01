@@ -152,3 +152,24 @@ def js_url(html: str) -> str:
     except (KeyError, RegexMatchError):
         base_js = get_ytplayer_js(html)
     return "https://youtube.com" + base_js
+
+
+def initial_data(watch_html: str) -> str:
+    """Extract the ytInitialData json from the watch_html page.
+    This is basically the metadata needed to display the page when it loads,
+    such as video information, copyright notices, etc.
+    :param watch_html: Html of the watch page.
+    :return:
+    """
+    patterns = [
+        r"window\[['\"]ytInitialData['\"]]\s*=\s*",
+        r"ytInitialData\s*=\s*"
+    ]
+    for pattern in patterns:
+        try:
+            return parse_for_object(watch_html, pattern)
+        except HTMLParseError:
+            pass
+
+    raise RegexMatchError(caller='initial_data',
+                          pattern='initial_data_pattern')
