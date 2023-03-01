@@ -70,3 +70,68 @@ def is_age_restricted(watch_html: str) -> bool:
     except RegexMatchError:
         return False
     return True
+
+
+def get_ytplayer_js(html: str) -> Any:
+    """Get the JavaScript path of the YouTube player base.
+    :param str html: html content of the view page.
+    :rtype: str
+    :return: Path to the base.js file of the YouTube player.
+    """
+    js_url_patterns = [
+        r"(/s/player/[\w\d]+/[\w\d_/.]+/base\.js)"
+    ]
+    for pattern in js_url_patterns:
+        regex = re.compile(pattern)
+        function_match = regex.search(html)
+        if function_match:
+            logger.debug("finished regex search, matched: %s", pattern)
+            yt_player_js = function_match.group(1)
+            return yt_player_js
+
+    raise RegexMatchError(
+        caller="get_ytplayer_js", pattern="js_url_patterns"
+    )
+
+
+def get_ytplayer_config(html: str) -> Any:
+    """Get the YouTube player configuration data from the html viewer file.
+    Extract ``ytplayer_config``, which is json data embedded in
+    watch html and serves as the primary source for the stream
+    manifest data.
+    :param str html: html-content of the watch page.
+    :rtype: str
+    :returns: The html substring containing the encoded manifest data.
+    """
+    logger.debug("finding initial function name")
+    config_patterns = [
+        r"ytplayer\.config\s*=\s*",
+        r"ytInitialPlayerResponse\s*=\s*"
+    ]
+    for pattern in config_patterns:
+        # Try each pattern consecutively if they don't find a match
+        try:
+            return parse_for_object(html, pattern)
+        except HTMLParseError as e:
+            logger.debug(f'Pattern failed: {pattern}')
+            logger.debug(e)
+            continue
+
+    # setConfig() needs to be handled a little differently.
+    # We want to parse the entire argument to setConfig()
+    #  and use then load that as json to find PLAYER_CONFIG
+    #  inside of it.
+    setconfig_patterns = [
+        r"yt\.setConfig\(.*['\"]PLAYER_CONFIG['\"]:\s*"
+    ]
+    for pattern in setconfig_patterns:
+        # Try each pattern consecutively if they don't find a match
+        try:
+            return parse_for_object(html, pattern)
+        except HTMLParseError:
+            continue
+
+    raise RegexMatchError(
+        caller="get_ytplayer_config",
+        pattern="config_patterns, setconfig_patterns"
+    )
