@@ -5,10 +5,11 @@ focuses almost exclusively on the developer interface.
 Tube offloads all the hard work to smaller peripheral modules and functions.
 
 """
-from tube import Stream, extract, request
+import tube
 from tube.monostate import Monostate
 from tube.helpers import install_proxy
 from tube.metadata import YouTubeMetadata
+from tube import Stream, extract, request
 from typing import Optional, Callable, Any, Dict, List
 
 
@@ -117,3 +118,32 @@ class YouTube:
             return self._age_restricted
         self._age_restricted = extract.is_age_restricted(self.watch_html)
         return self._age_restricted
+
+    @property
+    def js_url(self):
+        if self._js_url:
+            return self._js_url
+
+        if self.age_restricted:
+            self._js_url = extract.js_url(self.embed_html)
+        else:
+            self._js_url = extract.js_url(self.watch_html)
+
+        return self._js_url
+
+    @property
+    def js(self):
+        if self._js:
+            return self._js
+
+        # If the js_url does not match the cached url,
+        # retrieve the new js and refresh the cache,
+        # otherwise load the cache.
+        if tube.__js_url__ != self.js_url:
+            self._js = request.get(self.js_url)
+            tube.__js__ = self._js
+            tube.__js_url__ = self.js_url
+        else:
+            self._js = tube.__js__
+
+        return self._js
