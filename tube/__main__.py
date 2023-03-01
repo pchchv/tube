@@ -87,3 +87,12 @@ class YouTube:
 
         self.use_oauth = use_oauth
         self.allow_oauth_cache = allow_oauth_cache
+
+    def __repr__(self):
+        return f'<tube.__main__.YouTube object: videoId={self.video_id}>'
+
+    def __eq__(self, obj: object) -> bool:
+        # Compare types and urls, if they are the same,
+        # return true,
+        # else return false.
+        return type(obj) == type(self) and obj.watch_url == self.watch_url
