@@ -99,3 +99,16 @@ def head(url):
     """
     response_headers = _execute_request(url, method="HEAD").info()
     return {k.lower(): v for k, v in response_headers.items()}
+
+
+def get(url, extra_headers=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+    """Send http GET request.
+    :param str url: URL for executing a GET request.
+    :param dict extra_headers: Extra headers to add to the request
+    :rtype: str
+    :returns: UTF-8 encoded response string
+    """
+    if extra_headers is None:
+        extra_headers = {}
+    response = _execute_request(url, headers=extra_headers, timeout=timeout)
+    return response.read().decode("utf-8")
