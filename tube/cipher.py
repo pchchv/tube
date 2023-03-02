@@ -16,9 +16,9 @@ and getting the encrypted signature and decoding it.
 import re
 import logging
 from itertools import chain
-from tube.helpers import regex_search
-from typing import Any, List, Dict, Callable, Optional
+from tube.helpers import regex_search, cache
 from tube.exceptions import RegexMatchError, ExtractError
+from typing import Any, List, Dict, Callable, Optional, Tuple
 from tube.parser import find_object_from_startpoint, throttling_array_split
 
 
@@ -101,6 +101,31 @@ class Cipher:
 
         return "".join(signature)
 
+    @cache
+    def parse_function(self, js_func: str) -> Tuple[str, int]:
+        """Parsing a Javascript conversion function.
+        Explode the JavaScript conversion function into
+        a two-element ``cortex'' containing the function name
+        and some integer argument.
+        :param str js_func: JavaScript version of the conversion function.
+        :rtype: tuple
+        :returns:
+        a two-element tuple, containing the function name and the argument.
+        **Example**:
+        parse_function('DE.AJ(a,15)')
+        ('AJ', 15)
+        """
+        logger.debug("parsing transform function")
+        for pattern in self.js_func_patterns:
+            regex = re.compile(pattern)
+            parse_match = regex.search(js_func)
+            if parse_match:
+                fn_name, fn_arg = parse_match.groups()
+                return fn_name, int(fn_arg)
+
+        raise RegexMatchError(
+            caller="parse_function", pattern="js_func_patterns"
+        )
 
 
 def get_initial_function_name(js: str) -> str:
