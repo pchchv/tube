@@ -271,3 +271,20 @@ def throttling_unshift(d: list, e: int):
     d.clear()
     for el in new_arr:
         d.append(el)
+
+
+def throttling_reverse(arr: list):
+    """Inverts the input list.
+    It is necessary to perform an inversion in
+    place for the passed list to be modified.
+    To do this, create an inverse copy and
+    then modify each individual item.
+    """
+    reverse_copy = arr.copy()[::-1]
+    for i in range(len(reverse_copy)):
+        arr[i] = reverse_copy[i]
+
+
+def throttling_push(d: list, e: Any):
+    """Pushes an element to the list."""
+    d.append(e)
