@@ -288,3 +288,45 @@ def throttling_reverse(arr: list):
 def throttling_push(d: list, e: Any):
     """Pushes an element to the list."""
     d.append(e)
+
+
+def throttling_swap(d: list, e: int):
+    """Swap the 0th and e'th elements."""
+    e = throttling_mod_func(d, e)
+    f = d[0]
+    d[0] = d[e]
+    d[e] = f
+
+
+def throttling_cipher_function(d: list, e: str):
+    """This encrypts d with e to create a new list.
+    In javascript the operation looks like this:
+    var h = [A-Za-z0-9-_], f = 96;  // simplified from switch-case loop
+    d.forEach(
+        function(l,m,n){
+            this.push(
+                n[m]=h[
+                    (h.indexOf(l)-h.indexOf(this[m])+m-32+f--)%h.length
+                ]
+            )
+        },
+        e.split("")
+    )
+    """
+    h = list(
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_')
+    f = 96
+    # by naming it "this" we can more closely reflect the js
+    this = list(e)
+
+    # This is to avoid the oddity of
+    # using enumerate when changing the input list
+    copied_list = d.copy()
+
+    for m, l in enumerate(copied_list):
+        bracket_val = (h.index(l) - h.index(this[m]) + m - 32 + f) % len(h)
+        this.append(
+            h[bracket_val]
+        )
+        d[m] = h[bracket_val]
+        f -= 1
