@@ -106,3 +106,18 @@ class VideoPrivate(VideoUnavailable):
     @property
     def error_string(self):
         return f'{self.video_id} is a private video'
+
+
+class AgeRestrictedError(VideoUnavailable):
+    """Video is age restricted, and cannot be accessed without OAuth."""
+    def __init__(self, video_id: str):
+        """
+        :param str video_id: A YouTube video identifier.
+        """
+        self.video_id = video_id
+        super().__init__(self.video_id)
+
+    @property
+    def error_string(self):
+        return f"{self.video_id} is age restricted, \
+            and can't be accessed without logging in."
