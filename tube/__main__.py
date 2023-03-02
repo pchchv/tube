@@ -293,3 +293,34 @@ class YouTube:
         :rtype: :class:`CaptionQuery <CaptionQuery>`.
         """
         return tube.CaptionQuery(self.caption_tracks)
+
+    @property
+    def thumbnail_url(self) -> str:
+        """Get the thumbnail url image.
+        :rtype: str
+        """
+        thumbnail_details = (
+            self.vid_info.get("videoDetails", {})
+            .get("thumbnail", {})
+            .get("thumbnails")
+        )
+        if thumbnail_details:
+            thumbnail_details = thumbnail_details[-1]  # last item has max size
+            return thumbnail_details["url"]
+
+        return f"https://img.youtube.com/vi/{self.video_id}/maxresdefault.jpg"
+
+    @property
+    def publish_date(self):
+        """Get the publish date.
+        :rtype: datetime
+        """
+        if self._publish_date:
+            return self._publish_date
+        self._publish_date = extract.publish_date(self.watch_html)
+        return self._publish_date
+
+    @publish_date.setter
+    def publish_date(self, value):
+        """Sets the publish date."""
+        self._publish_date = value
