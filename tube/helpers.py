@@ -3,11 +3,15 @@ import re
 import os
 import logging
 from urllib import request
-from typing import Optional, Dict
+from functools import lru_cache
 from tube.exceptions import RegexMatchError
+from typing import Optional, Dict, Callable, TypeVar
 
 
 logger = logging.getLogger(__name__)
+
+
+GenericType = TypeVar("GenericType")
 
 
 def regex_search(pattern: str, string: str, group: int) -> str:
@@ -91,3 +95,8 @@ def install_proxy(proxy_handler: Dict[str, str]) -> None:
     proxy_support = request.ProxyHandler(proxy_handler)
     opener = request.build_opener(proxy_support)
     request.install_opener(opener)
+
+
+def cache(func: Callable[..., GenericType]) -> GenericType:
+    """ mypy compatible annotation wrapper for lru_cache"""
+    return lru_cache()(func)  # type: ignore
