@@ -4,7 +4,10 @@ since each of the interfaces return raw results.
 Instead, they should be parsed to extract useful information for the end user.
 """
 import os
+import json
+import time
 import pathlib
+from tube import request
 
 # YouTube on TV client secrets
 _client_id = ''  # TODO: Add env variables
@@ -86,3 +89,51 @@ class InnerTube:
                     self.refresh_token = data['refresh_token']
                     self.expires = data['expires']
                     self.refresh_bearer_token()
+
+    def cache_tokens(self):
+        """Cache tokens to file if allowed."""
+        if not self.allow_cache:
+            return
+
+        data = {
+            'access_token': self.access_token,
+            'refresh_token': self.refresh_token,
+            'expires': self.expires
+        }
+        if not os.path.exists(_cache_dir):
+            os.mkdir(_cache_dir)
+        with open(_token_file, 'w') as f:
+            json.dump(data, f)
+
+    def refresh_bearer_token(self, force=False):
+        """Refreshes the OAuth token if necessary.
+        :param bool force: Force-refresh the bearer token.
+        """
+        if not self.use_oauth:
+            return
+        # Skip refresh if it's not necessary and not forced
+        if self.expires > time.time() and not force:
+            return
+
+        # Subtraction of 30 seconds is arbitrary to
+        # avoid possible time discrepancies
+        start_time = int(time.time() - 30)
+        data = {
+            'client_id': _client_id,
+            'client_secret': _client_secret,
+            'grant_type': 'refresh_token',
+            'refresh_token': self.refresh_token
+        }
+        response = request._execute_request(
+            'https://oauth2.googleapis.com/token',
+            'POST',
+            headers={
+                'Content-Type': 'application/json'
+            },
+            data=data
+        )
+        response_data = json.loads(response.read())
+
+        self.access_token = response_data['access_token']
+        self.expires = start_time + response_data['expires_in']
+        self.cache_tokens()
