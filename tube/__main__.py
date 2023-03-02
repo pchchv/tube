@@ -274,3 +274,22 @@ class YouTube:
             raise AgeRestrictedError(self.video_id)
 
         self._vid_info = innertube_response
+
+    @property
+    def caption_tracks(self) -> List[tube.Caption]:
+        """Get a list of :class:`Caption <Caption>`.
+        :rtype: List[Caption]
+        """
+        raw_tracks = (
+            self.vid_info.get("captions", {})
+            .get("playerCaptionsTracklistRenderer", {})
+            .get("captionTracks", [])
+        )
+        return [tube.Caption(track) for track in raw_tracks]
+
+    @property
+    def captions(self) -> tube.CaptionQuery:
+        """Interface to query caption tracks.
+        :rtype: :class:`CaptionQuery <CaptionQuery>`.
+        """
+        return tube.CaptionQuery(self.caption_tracks)
