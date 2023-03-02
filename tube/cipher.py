@@ -18,8 +18,8 @@ import logging
 from itertools import chain
 from tube.helpers import regex_search
 from tube.exceptions import RegexMatchError
-from tube.parser import find_object_from_startpoint
 from typing import Any, List, Dict, Callable, Optional
+from tube.parser import find_object_from_startpoint, throttling_array_split
 
 
 logger = logging.getLogger(__name__)
@@ -211,6 +211,73 @@ def get_throttling_function_code(js: str) -> str:
 
     # Prepend function definition (e.g. `Dea=function(a)`)
     return match.group(0) + joined_lines
+
+
+def get_throttling_function_array(js: str) -> List[Any]:
+    """Extract the array "c".
+    :param str js: Contents of the base.js asset file.
+    :return: An array of various integers, arrays, and functions.
+    """
+    raw_code = get_throttling_function_code(js)
+
+    array_start = r",c=\["
+    array_regex = re.compile(array_start)
+    match = array_regex.search(raw_code)
+
+    array_raw = find_object_from_startpoint(raw_code, match.span()[1] - 1)
+    str_array = throttling_array_split(array_raw)
+
+    converted_array = []
+    for el in str_array:
+        try:
+            converted_array.append(int(el))
+            continue
+        except ValueError:
+            # Not an integer value.
+            pass
+
+        if el == 'null':
+            converted_array.append(None)
+            continue
+
+        if el.startswith('"') and el.endswith('"'):
+            # Convert e.g. '"abcdef"' to string without quotation marks,
+            # 'abcdef'
+            converted_array.append(el[1:-1])
+            continue
+
+        if el.startswith('function'):
+            mapper = (
+                (r"{for\(\w=\(\w%\w\.length\+\w\.length\)%\w\
+                 .length;\w--;\)\w\.unshift\(\w.pop\(\)\)}", throttling_unshift),  # noqa:E501
+                (r"{\w\.reverse\(\)}", throttling_reverse),
+                (r"{\w\.push\(\w\)}", throttling_push),
+                (r";var\s\w=\w\[0\];\w\[0\]=\w\[\w\];\w\[\w\]=\w}",
+                 throttling_swap),
+                (r"case\s\d+", throttling_cipher_function),
+                (r"\w\.splice\(0,1,\w\.splice\(\w,1,\w\[0\]\)\[0\]\)", throttling_nested_splice),  # noqa:E501
+                (r";\w\.splice\(\w,1\)}", js_splice),
+                (r"\w\.splice\(-\w\)\.reverse\(\)\
+                 .forEach\(function\(\w\){\w\.unshift\(\w\)}\)", throttling_prepend),  # noqa:E501
+                (r"for\(var \w=\w\.length;\w;\)\w\.push\(\w\.splice\(--\w,1\)\[0\]\)}", throttling_reverse),  # noqa:E501
+            )
+
+            found = False
+            for pattern, fn in mapper:
+                if re.search(pattern, el):
+                    converted_array.append(fn)
+                    found = True
+            if found:
+                continue
+
+        converted_array.append(el)
+
+    # Replace null elements with array itself
+    for i in range(len(converted_array)):
+        if converted_array[i] is None:
+            converted_array[i] = converted_array
+
+    return converted_array
 
 
 def js_splice(arr: list, start: int, delete_count=None, *items):
