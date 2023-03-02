@@ -16,9 +16,10 @@ and getting the encrypted signature and decoding it.
 import re
 import logging
 from itertools import chain
-from typing import Any, List, Dict, Callable, Optional
 from tube.helpers import regex_search
 from tube.exceptions import RegexMatchError
+from tube.parser import find_object_from_startpoint
+from typing import Any, List, Dict, Callable, Optional
 
 
 logger = logging.getLogger(__name__)
@@ -149,6 +150,67 @@ def map_functions(js_func: str) -> Callable:
         if re.search(pattern, js_func):
             return fn
     raise RegexMatchError(caller="map_functions", pattern="multiple")
+
+
+def get_throttling_function_name(js: str) -> str:
+    """Extracts the name of the function that calculates the
+    throttle parameter.
+    :param str js: Contents of the base.js asset file.
+    :rtype: str
+    :returns: Name of the function used to calculate the throttling parameter.
+    """
+    function_patterns = [
+        r'a\.[a-zA-Z]\s*&&\s*\([a-z]\s*=\s*a\.get\("n"\)\)\s*&&\s*'
+        r'\([a-z]\s*=\s*([a-zA-Z0-9$]+)(\[\d+\])?\([a-z]\)',
+    ]
+    logger.debug('Finding throttling function name')
+    for pattern in function_patterns:
+        regex = re.compile(pattern)
+        function_match = regex.search(js)
+        if function_match:
+            logger.debug("finished regex search, matched: %s", pattern)
+            if len(function_match.groups()) == 1:
+                return function_match.group(1)
+            idx = function_match.group(2)
+            if idx:
+                idx = idx.strip("[]")
+                array = re.search(
+                    r'var {nfunc}\s*=\s*(\[.+?\]);'.format(
+                        nfunc=re.escape(function_match.group(1))),
+                    js
+                )
+                if array:
+                    array = array.group(1).strip("[]").split(",")
+                    array = [x.strip() for x in array]
+                    return array[int(idx)]
+
+    raise RegexMatchError(
+        caller="get_throttling_function_name", pattern="multiple"
+    )
+
+
+def get_throttling_function_code(js: str) -> str:
+    """Extract the raw code for the throttle function.
+    :param str js: Contents of the base.js asset file.
+    :rtype: str
+    :returns: Name of the function used to calculate the throttling parameter.
+    """
+    # Begin by extracting the correct function name
+    name = re.escape(get_throttling_function_name(js))
+
+    # Identify where the function is defined
+    pattern_start = r"%s=function\(\w\)" % name
+    regex = re.compile(pattern_start)
+    match = regex.search(js)
+
+    # Extract the code in curly braces for the
+    # function itself and merge all split lines
+    code_lines_list = find_object_from_startpoint(
+        js, match.span()[1]).split('\n')
+    joined_lines = "".join(code_lines_list)
+
+    # Prepend function definition (e.g. `Dea=function(a)`)
+    return match.group(0) + joined_lines
 
 
 def reverse(arr: List, _: Optional[Any]):
