@@ -2,11 +2,12 @@
 import re
 import logging
 from datetime import datetime
-from urllib.parse import parse_qs
+from tube.cipher import Cipher
 from tube.helpers import regex_search
 from tube.parser import parse_for_object
 from typing import Any, Dict, Tuple, List
-from tube.exceptions import RegexMatchError, HTMLParseError
+from urllib.parse import parse_qs, urlparse, urlencode
+from tube.exceptions import RegexMatchError, HTMLParseError, LiveStreamError
 
 
 logger = logging.getLogger(__name__)
@@ -205,3 +206,57 @@ def apply_descrambler(stream_data: Dict) -> None:
 
     logger.debug("applying descrambler")
     return formats
+
+
+def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
+    """Apply a decrypted signature to the stream manifest.
+    :param dict stream_manifest: Details of available media streams.
+    :param str js: Contents of the base.js asset file.
+    """
+    cipher = Cipher(js=js)
+
+    for i, stream in enumerate(stream_manifest):
+        try:
+            url: str = stream["url"]
+        except KeyError:
+            live_stream = (
+                vid_info.get("playabilityStatus", {},)
+                .get("liveStreamability")
+            )
+            if live_stream:
+                raise LiveStreamError("UNKNOWN")
+        # 403 Forbidden fix.
+        if "signature" in url or (
+            "s" not in stream and ("&sig=" in url or "&lsig=" in url)
+        ):
+            # For certain videos, YouTube will just provide them pre-signed,
+            # in which case there's no real magic to download them and
+            # we can skip the whole signature descrambling entirely.
+            logger.debug("signature found, skip decipher")
+            continue
+
+        signature = cipher.get_signature(ciphered_signature=stream["s"])
+
+        logger.debug(
+            "finished descrambling signature for itag=%s", stream["itag"]
+        )
+        parsed_url = urlparse(url)
+
+        # Convert query params off url to dict
+        query_params = parse_qs(urlparse(url).query)
+        query_params = {
+            k: v[0] for k, v in query_params.items()
+        }
+        query_params['sig'] = signature
+        if 'ratebypass' not in query_params.keys():
+            # Cipher n to get the updated value
+
+            initial_n = list(query_params['n'])
+            new_n = cipher.calculate_n(initial_n)
+            query_params['n'] = new_n
+
+        url = f'{parsed_url.scheme}://{parsed_url.netloc}\
+            {parsed_url.path}?{urlencode(query_params)}'  # noqa:E501
+
+        # 403 forbidden fix
+        stream_manifest[i]["url"] = url
