@@ -250,3 +250,24 @@ def swap(arr: List, b: int):
     """
     r = b % len(arr)
     return list(chain([arr[r]], arr[1:r], [arr[0]], arr[r + 1:]))
+
+
+def throttling_mod_func(d: list, e: int):
+    """Perform a modular function from the throttling array functions.
+    In javascript the modular operation looks like this:
+    e = (e % d.length + d.length) % d.length.
+    Here we simply translate this into python.
+    """
+    return (e % len(d) + len(d)) % len(d)
+
+
+def throttling_unshift(d: list, e: int):
+    """Rotates the list items to the right.
+    In javascript the operation looks like this:
+    for(e=(e%d.length+d.length)%d.length;e--;)d.unshift(d.pop())
+    """
+    e = throttling_mod_func(d, e)
+    new_arr = d[-e:] + d[:-e]
+    d.clear()
+    for el in new_arr:
+        d.append(el)
