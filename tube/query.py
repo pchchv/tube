@@ -2,7 +2,19 @@
 from tube import Caption
 from typing import List, Optional
 from tube.helpers import deprecated
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+
+
+class StreamQuery(Sequence):
+    """Interface for querying the available media streams."""
+
+    def __init__(self, fmt_streams):
+        """Construct a :class:`StreamQuery <StreamQuery>`.
+        param list fmt_streams:
+            list of :class:`Stream <Stream>` instances.
+        """
+        self.fmt_streams = fmt_streams
+        self.itag_index = {int(s.itag): s for s in fmt_streams}
 
 
 class CaptionQuery(Mapping):
