@@ -365,3 +365,62 @@ def throttling_cipher_function(d: list, e: str):
         )
         d[m] = h[bracket_val]
         f -= 1
+
+
+def throttling_nested_splice(d: list, e: int):
+    """Nested splicing function in throttling js.
+    In javascript the operation looks as follows:
+    function(d,e){
+        e=(e%d.length+d.length)%d.length;
+        d.splice(
+            0,
+            1,
+            d.splice(
+                e,
+                1,
+                d[0]
+            )[0]
+        )
+    }
+    """
+    e = throttling_mod_func(d, e)
+    inner_splice = js_splice(
+        d,
+        e,
+        1,
+        d[0]
+    )
+    js_splice(
+        d,
+        0,
+        1,
+        inner_splice[0]
+    )
+
+
+def throttling_prepend(d: list, e: int):
+    """This moves the last e elements of d to the beginning.
+    In javascript, the operation looks like this:
+    function(d,e){
+        e=(e%d.length+d.length)%d.length;
+        d.splice(-e).reverse().forEach(
+            function(f){
+                d.unshift(f)
+            }
+        )
+    }
+    """
+    start_len = len(d)
+    # First, calculate e
+    e = throttling_mod_func(d, e)
+
+    # Then do the prepending
+    new_arr = d[-e:] + d[:-e]
+
+    # And update the input list
+    d.clear()
+    for el in new_arr:
+        d.append(el)
+
+    end_len = len(d)
+    assert start_len == end_len
