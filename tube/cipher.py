@@ -17,8 +17,8 @@ import re
 import logging
 from itertools import chain
 from tube.helpers import regex_search
-from tube.exceptions import RegexMatchError
 from typing import Any, List, Dict, Callable, Optional
+from tube.exceptions import RegexMatchError, ExtractError
 from tube.parser import find_object_from_startpoint, throttling_array_split
 
 
@@ -43,8 +43,63 @@ class Cipher:
 
         self.throttling_plan = get_throttling_plan(js)
         self.throttling_array = get_throttling_function_array(js)
-
         self.calculated_n = None
+
+    def calculate_n(self, initial_n: list):
+        """Converts n to the correct value to prevent throttling."""
+        if self.calculated_n:
+            return self.calculated_n
+
+        # First, update all instances of 'b' with the list(initial_n)
+        for i in range(len(self.throttling_array)):
+            if self.throttling_array[i] == 'b':
+                self.throttling_array[i] = initial_n
+
+        for step in self.throttling_plan:
+            curr_func = self.throttling_array[int(step[0])]
+            if not callable(curr_func):
+                logger.debug(f'{curr_func} is not callable.')
+                logger.debug(f'Throttling array:\n{self.throttling_array}\n')
+                raise ExtractError(f'{curr_func} is not callable.')
+
+            first_arg = self.throttling_array[int(step[1])]
+
+            if len(step) == 2:
+                curr_func(first_arg)
+            elif len(step) == 3:
+                second_arg = self.throttling_array[int(step[2])]
+                curr_func(first_arg, second_arg)
+
+        self.calculated_n = ''.join(initial_n)
+        return self.calculated_n
+
+    def get_signature(self, ciphered_signature: str) -> str:
+        """Decrypt the signature.
+        Having received the decrypted signature,
+        applies the conversion functions.
+        :param str ciphered_signature:
+        Encrypted signature sent to ``player_config''.
+        :rtype: str
+        :return: The decrypted signature needed to load media content.
+        """
+        signature = list(ciphered_signature)
+
+        for js_func in self.transform_plan:
+            name, argument = self.parse_function(js_func)  # type: ignore
+            signature = self.transform_map[name](signature, argument)
+            logger.debug(
+                "applied transform function\n"
+                "output: %s\n"
+                "js_function: %s\n"
+                "argument: %d\n"
+                "function: %s",
+                "".join(signature),
+                name,
+                argument,
+                self.transform_map[name],
+            )
+
+        return "".join(signature)
 
 
 
