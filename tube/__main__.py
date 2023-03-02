@@ -18,6 +18,7 @@ from tube.exceptions import (
     VideoPrivate,
     LiveStreamError,
     VideoUnavailable,
+    AgeRestrictedError,
     RecordingUnavailable
     )
 
@@ -255,3 +256,21 @@ class YouTube:
         innertube_response = innertube.player(self.video_id)
         self._vid_info = innertube_response
         return self._vid_info
+
+    def bypass_age_gate(self):
+        """Attempt to update the vid_info by bypassing the age gate."""
+        innertube = InnerTube(
+            client='ANDROID_EMBED',
+            use_oauth=self.use_oauth,
+            allow_cache=self.allow_oauth_cache
+        )
+        innertube_response = innertube.player(self.video_id)
+        playability_status =\
+            innertube_response['playabilityStatus'].get('status', None)
+
+        # If we still can't access the video,
+        # raise an exception (tier 3 age restriction)
+        if playability_status == 'UNPLAYABLE':
+            raise AgeRestrictedError(self.video_id)
+
+        self._vid_info = innertube_response
