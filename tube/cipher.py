@@ -354,6 +354,36 @@ def swap(arr: List, b: int):
     return list(chain([arr[r]], arr[1:r], [arr[0]], arr[r + 1:]))
 
 
+def get_throttling_plan(js: str):
+    """Extract the "throttling plan".
+    The "throttling plan" is a list of tuples used
+    to call functions in the array c.
+    The first element of the tuple is the index of the function to call,
+    and all other elements of the tuple are arguments passed to this function.
+    :param str js: The contents of the base.js asset file.
+    :return: Full function code for calculating the throttlign parameter.
+    """
+    raw_code = get_throttling_function_code(js)
+    transform_start = r"try{"
+    plan_regex = re.compile(transform_start)
+    match = plan_regex.search(raw_code)
+    transform_plan_raw = find_object_from_startpoint(raw_code,
+                                                     match.span()[1] - 1)
+
+    # Steps are either c[x](c[y]) or c[x](c[y],c[z])
+    step_start = r"c\[(\d+)\]\(c\[(\d+)\](,c(\[(\d+)\]))?\)"
+    step_regex = re.compile(step_start)
+    matches = step_regex.findall(transform_plan_raw)
+    transform_steps = []
+    for match in matches:
+        if match[4] != '':
+            transform_steps.append((match[0], match[1], match[4]))
+        else:
+            transform_steps.append((match[0], match[1]))
+
+    return transform_steps
+
+
 def throttling_mod_func(d: list, e: int):
     """Perform a modular function from the throttling array functions.
     In javascript the modular operation looks like this:
