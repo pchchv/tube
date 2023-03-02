@@ -25,6 +25,29 @@ from tube.parser import find_object_from_startpoint, throttling_array_split
 logger = logging.getLogger(__name__)
 
 
+class Cipher:
+    def __init__(self, js: str):
+        self.transform_plan: List[str] = get_transform_plan(js)
+        var_regex = re.compile(r"^\w+\W")
+        var_match = var_regex.search(self.transform_plan[0])
+        if not var_match:
+            raise RegexMatchError(
+                caller="__init__", pattern=var_regex.pattern
+            )
+        var = var_match.group(0)[:-1]
+        self.transform_map = get_transform_map(js, var)
+        self.js_func_patterns = [
+            r"\w+\.(\w+)\(\w,(\d+)\)",
+            r"\w+\[(\"\w+\")\]\(\w,(\d+)\)"
+        ]
+
+        self.throttling_plan = get_throttling_plan(js)
+        self.throttling_array = get_throttling_function_array(js)
+
+        self.calculated_n = None
+
+
+
 def get_initial_function_name(js: str) -> str:
     """Extract the name of the function responsible for
     calculating the signature.
