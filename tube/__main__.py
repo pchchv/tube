@@ -8,10 +8,17 @@ Tube offloads all the hard work to smaller peripheral modules and functions.
 import tube
 from tube.monostate import Monostate
 from tube.helpers import install_proxy
-from tube.exceptions import ExtractError
 from tube.metadata import YouTubeMetadata
 from tube import Stream, extract, request
 from typing import Optional, Callable, Any, Dict, List
+from tube.exceptions import (
+    MembersOnly,
+    ExtractError,
+    VideoPrivate,
+    LiveStreamError,
+    VideoUnavailable,
+    RecordingUnavailable
+    )
 
 
 class YouTube:
@@ -202,3 +209,33 @@ class YouTube:
         self.stream_monostate.duration = self.length
 
         return self._fmt_streams
+
+    def check_availability(self):
+        """Check whether the video is available.
+        Raises different exceptions based on why the video is unavailable,
+        otherwise does nothing.
+        """
+        status, messages = extract.playability_status(self.watch_html)
+
+        for reason in messages:
+            if status == 'UNPLAYABLE':
+                if reason == (
+                    'Join this channel to get access to members-only content '
+                    'like this video, and other exclusive perks.'
+                ):
+                    raise MembersOnly(video_id=self.video_id)
+                elif reason == 'This live stream recording is not available.':
+                    raise RecordingUnavailable(video_id=self.video_id)
+                else:
+                    raise VideoUnavailable(video_id=self.video_id)
+            elif status == 'LOGIN_REQUIRED':
+                if reason == (
+                    'This is a private video. '
+                    'Please sign in to verify that you may see it.'
+                ):
+                    raise VideoPrivate(video_id=self.video_id)
+            elif status == 'ERROR':
+                if reason == 'Video unavailable':
+                    raise VideoUnavailable(video_id=self.video_id)
+            elif status == 'LIVE_STREAM':
+                raise LiveStreamError(video_id=self.video_id)
