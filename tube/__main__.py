@@ -8,6 +8,7 @@ Tube offloads all the hard work to smaller peripheral modules and functions.
 import tube
 from tube.monostate import Monostate
 from tube.helpers import install_proxy
+from tube.exceptions import ExtractError
 from tube.metadata import YouTubeMetadata
 from tube import Stream, extract, request
 from typing import Optional, Callable, Any, Dict, List
@@ -163,3 +164,41 @@ class YouTube:
         else:
             self.bypass_age_gate()
             return self.vid_info['streamingData']
+
+    @property
+    def fmt_streams(self):
+        """Returns a list of threads if they have been initialized.
+        If threads were not initialized,
+        finds all relevant threads and initializes them.
+        """
+        self.check_availability()
+        if self._fmt_streams:
+            return self._fmt_streams
+
+        self._fmt_streams = []
+
+        stream_manifest = extract.apply_descrambler(self.streaming_data)
+
+        try:
+            extract.apply_signature(stream_manifest, self.vid_info, self.js)
+        except ExtractError:
+            # To force an update of the js-file, clear the cache and try again
+            self._js = None
+            self._js_url = None
+            tube.__js__ = None
+            tube.__js_url__ = None
+            extract.apply_signature(stream_manifest, self.vid_info, self.js)
+
+        # Create instances of :class:`Stream <Stream>`
+        # Initialize stream objects
+        for stream in stream_manifest:
+            video = Stream(
+                stream=stream,
+                monostate=self.stream_monostate,
+            )
+            self._fmt_streams.append(video)
+
+        self.stream_monostate.title = self.title
+        self.stream_monostate.duration = self.length
+
+        return self._fmt_streams
