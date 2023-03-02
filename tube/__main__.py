@@ -7,6 +7,7 @@ Tube offloads all the hard work to smaller peripheral modules and functions.
 """
 import tube
 from tube.monostate import Monostate
+from tube.innertube import InnerTube
 from tube.helpers import install_proxy
 from tube.metadata import YouTubeMetadata
 from tube import Stream, extract, request
@@ -239,3 +240,18 @@ class YouTube:
                     raise VideoUnavailable(video_id=self.video_id)
             elif status == 'LIVE_STREAM':
                 raise LiveStreamError(video_id=self.video_id)
+
+    @property
+    def vid_info(self):
+        """Parse the raw vid info and return the parsed result.
+        :rtype: Dict[Any, Any]
+        """
+        if self._vid_info:
+            return self._vid_info
+
+        innertube = InnerTube(
+            use_oauth=self.use_oauth, allow_cache=self.allow_oauth_cache)
+
+        innertube_response = innertube.player(self.video_id)
+        self._vid_info = innertube_response
+        return self._vid_info
