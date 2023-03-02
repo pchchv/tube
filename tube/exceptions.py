@@ -31,3 +31,33 @@ class RegexMatchError(ExtractError):
 
 class HTMLParseError(TubeError):
     """HTML could not be parsed"""
+
+
+class VideoUnavailable(TubeError):
+    """Base video unavailable error."""
+    def __init__(self, video_id: str):
+        """
+        :param str video_id:
+            A YouTube video identifier.
+        """
+        self.video_id = video_id
+        super().__init__(self.error_string)
+
+    @property
+    def error_string(self):
+        return f'{self.video_id} is unavailable'
+
+
+class LiveStreamError(VideoUnavailable):
+    """Video is a live stream."""
+    def __init__(self, video_id: str):
+        """
+        :param str video_id:
+            A YouTube video identifier.
+        """
+        self.video_id = video_id
+        super().__init__(self.video_id)
+
+    @property
+    def error_string(self):
+        return f'{self.video_id} is streaming live and cannot be loaded'
