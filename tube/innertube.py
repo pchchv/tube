@@ -7,6 +7,7 @@ import os
 import json
 import time
 import pathlib
+from urllib import parse
 from tube import request
 
 # YouTube on TV client secrets
@@ -137,3 +138,198 @@ class InnerTube:
         self.access_token = response_data['access_token']
         self.expires = start_time + response_data['expires_in']
         self.cache_tokens()
+
+    def fetch_bearer_token(self):
+        """Fetch an OAuth token."""
+        # Subtraction of 30 seconds is arbitrary to
+        # avoid possible time discrepancies
+        start_time = int(time.time() - 30)
+        data = {
+            'client_id': _client_id,
+            'scope': 'https://www.googleapis.com/auth/youtube'
+        }
+        response = request._execute_request(
+            'https://oauth2.googleapis.com/device/code',
+            'POST',
+            headers={
+                'Content-Type': 'application/json'
+            },
+            data=data
+        )
+        response_data = json.loads(response.read())
+        verification_url = response_data['verification_url']
+        user_code = response_data['user_code']
+        print(f'Please open {verification_url} and input code {user_code}')
+        input('Press enter when you have completed this step.')
+
+        data = {
+            'client_id': _client_id,
+            'client_secret': _client_secret,
+            'device_code': response_data['device_code'],
+            'grant_type': 'urn:ietf:params:oauth:grant-type:device_code'
+        }
+        response = request._execute_request(
+            'https://oauth2.googleapis.com/token',
+            'POST',
+            headers={
+                'Content-Type': 'application/json'
+            },
+            data=data
+        )
+        response_data = json.loads(response.read())
+
+        self.access_token = response_data['access_token']
+        self.refresh_token = response_data['refresh_token']
+        self.expires = start_time + response_data['expires_in']
+        self.cache_tokens()
+
+    @property
+    def base_url(self):
+        """Return the base url endpoint for the innertube API."""
+        return 'https://www.youtube.com/youtubei/v1'
+
+    @property
+    def base_data(self):
+        """Return the base json data to transmit to the innertube API."""
+        return {
+            'context': self.context
+        }
+
+    @property
+    def base_params(self):
+        """Returns basic request parameters to send to the innertube API."""
+        return {
+            'key': self.api_key,
+            'contentCheckOk': True,
+            'racyCheckOk': True
+        }
+
+    def _call_api(self, endpoint, query, data):
+        """Make a request to a given endpoint with the
+        specified query parameters and data."""
+        # Remove the API key if oauth is being used.
+        if self.use_oauth:
+            del query['key']
+
+        endpoint_url = f'{endpoint}?{parse.urlencode(query)}'
+        headers = {
+            'Content-Type': 'application/json',
+        }
+        # Add the bearer token if applicable
+        if self.use_oauth:
+            if self.access_token:
+                self.refresh_bearer_token()
+                headers['Authorization'] = f'Bearer {self.access_token}'
+            else:
+                self.fetch_bearer_token()
+                headers['Authorization'] = f'Bearer {self.access_token}'
+
+        response = request._execute_request(
+            endpoint_url,
+            'POST',
+            headers=headers,
+            data=data
+        )
+        return json.loads(response.read())
+
+    def browse(self):
+        """Make a request to the browse endpoint.
+        TODO: Figure out how we can use this
+        """
+        # endpoint = f'{self.base_url}/browse'  # noqa:E800
+        ...
+        # return self._call_api(endpoint, query, self.base_data)  # noqa:E800
+
+    def config(self):
+        """Make a request to the config endpoint.
+        TODO: Figure out how we can use this
+        """
+        # endpoint = f'{self.base_url}/config'  # noqa:E800
+        ...
+        # return self._call_api(endpoint, query, self.base_data)  # noqa:E800
+
+    def guide(self):
+        """Make a request to the guide endpoint.
+        TODO: Figure out how we can use this
+        """
+        # endpoint = f'{self.base_url}/guide'  # noqa:E800
+        ...
+        # return self._call_api(endpoint, query, self.base_data)  # noqa:E800
+
+    def next(self):
+        """Make a request to the next endpoint.
+        TODO: Figure out how we can use this
+        """
+        # endpoint = f'{self.base_url}/next'  # noqa:E800
+        ...
+        # return self._call_api(endpoint, query, self.base_data)  # noqa:E800
+
+    def player(self, video_id):
+        """Make a request to the player endpoint.
+        :param str video_id:
+            The video id to get player info for.
+        :rtype: dict
+        :returns:
+            Raw player info results.
+        """
+        endpoint = f'{self.base_url}/player'
+        query = {
+            'videoId': video_id,
+        }
+        query.update(self.base_params)
+        return self._call_api(endpoint, query, self.base_data)
+
+    def search(self, search_query, continuation=None):
+        """Make a request to the search endpoint.
+        :param str search_query:
+            The query to search.
+        :rtype: dict
+        :returns:
+            Raw search query results.
+        """
+        endpoint = f'{self.base_url}/search'
+        query = {
+            'query': search_query
+        }
+        query.update(self.base_params)
+        data = {}
+        if continuation:
+            data['continuation'] = continuation
+        data.update(self.base_data)
+        return self._call_api(endpoint, query, data)
+
+    def verify_age(self, video_id):
+        """Make a query to the age_verify endpoint.
+        :param str video_id:
+            The identifier of the video for which you want
+            to retrieve player information.
+        :rtype:
+        :returns:
+            Returns information including the URL to
+            bypass certain restrictions.
+        """
+        endpoint = f'{self.base_url}/verify_age'
+        data = {
+            'nextEndpoint': {
+                'urlEndpoint': {
+                    'url': f'/watch?v={video_id}'
+                }
+            },
+            'setControvercy': True
+        }
+        data.update(self.base_data)
+        result = self._call_api(endpoint, self.base_params, data)
+        return result
+
+    def get_transcript(self, video_id):
+        """Make a request to the get_transcript endpoint.
+        This is probably related to subtitles for the video,
+        but is not currently checked.
+        """
+        endpoint = f'{self.base_url}/get_transcript'
+        query = {
+            'videoId': video_id,
+        }
+        query.update(self.base_params)
+        result = self._call_api(endpoint, query, self.base_data)
+        return result
