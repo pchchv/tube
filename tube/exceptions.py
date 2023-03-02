@@ -61,3 +61,48 @@ class LiveStreamError(VideoUnavailable):
     @property
     def error_string(self):
         return f'{self.video_id} is streaming live and cannot be loaded'
+
+
+class MembersOnly(VideoUnavailable):
+    """Video is members-only.
+    YouTube has special videos that are only viewable to
+    users who have subscribed to a content creator.
+    """
+    def __init__(self, video_id: str):
+        """
+        :param str video_id:
+            A YouTube video identifier.
+        """
+        self.video_id = video_id
+        super().__init__(self.video_id)
+
+    @property
+    def error_string(self):
+        return f'{self.video_id} is a members-only video'
+
+
+class RecordingUnavailable(VideoUnavailable):
+    def __init__(self, video_id: str):
+        """
+        :param str video_id: A YouTube video identifier.
+        """
+        self.video_id = video_id
+        super().__init__(self.video_id)
+
+    @property
+    def error_string(self):
+        return f'{self.video_id} \
+            does not have a live stream recording available'
+
+
+class VideoPrivate(VideoUnavailable):
+    def __init__(self, video_id: str):
+        """
+        :param str video_id: A YouTube video identifier.
+        """
+        self.video_id = video_id
+        super().__init__(self.video_id)
+
+    @property
+    def error_string(self):
+        return f'{self.video_id} is a private video'
