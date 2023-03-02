@@ -213,6 +213,41 @@ def get_throttling_function_code(js: str) -> str:
     return match.group(0) + joined_lines
 
 
+def js_splice(arr: list, start: int, delete_count=None, *items):
+    """Implementation of the splice function from javascript.
+    :param list arr: Array for splice
+    :param int start: The index from which to start changing the array
+    :param int delete_count: Number of elements to delete from the array
+    :param *items: Elements to add to the array
+    """
+    # Special conditions for start value
+    try:
+        if start > len(arr):
+            start = len(arr)
+        # If start is negative, count backwards from end
+        if start < 0:
+            start = len(arr) - start
+    except TypeError:
+        # Non-integer start values are treated as 0 in js
+        start = 0
+
+    # Special condition when delete_count is greater than remaining elements
+    if not delete_count or delete_count >= len(arr) - start:
+        delete_count = len(arr) - start  # noqa: N806
+
+    deleted_elements = arr[start:start + delete_count]
+
+    # Splice appropriately.
+    new_arr = arr[:start] + list(items) + arr[start + delete_count:]
+
+    # Replace contents of input array
+    arr.clear()
+    for el in new_arr:
+        arr.append(el)
+
+    return deleted_elements
+
+
 def reverse(arr: List, _: Optional[Any]):
     """Reverse elements in a list.
     This function is equivalent to:
