@@ -3,7 +3,8 @@ import sys
 import shutil
 import argparse
 from typing import List, Optional
-from tube import __version__, Stream
+from tube.exceptions import VideoUnavailable
+from tube import __version__, Stream, YouTube
 
 
 def _parse_args(
@@ -155,3 +156,23 @@ def _download(
 
     stream.download(output_path=target, filename=filename)
     sys.stdout.write("\n")
+
+
+def download_highest_resolution_progressive(
+    youtube: YouTube, resolution: str, target: Optional[str] = None
+) -> None:
+    """Start downloading the highest resolution progressive stream.
+    :param YouTube youtube: A valid YouTube object.
+    :param str resolution: YouTube video resolution.
+    :param str target: Target directory for download
+    """
+    youtube.register_on_progress_callback(on_progress)
+    try:
+        stream = youtube.streams.get_highest_resolution()
+    except VideoUnavailable as err:
+        print(f"No video streams available: {err}")
+    else:
+        try:
+            _download(stream, target=target)
+        except KeyboardInterrupt:
+            sys.exit()
