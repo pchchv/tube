@@ -451,3 +451,14 @@ class YouTube:
         :rtype: None
         """
         self.stream_monostate.on_progress = func
+
+    def register_on_complete_callback(self,
+                                      func: Callable[[Any, Optional[str]],
+                                                     None]):
+        """Register a download complete callback function post initialization.
+        :param callable func:
+            A callback function that takes ``stream`` and  ``file_path``.
+        :rtype: None
+        """
+        self.stream_monostate.on_complete = func
+
