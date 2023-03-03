@@ -4,9 +4,9 @@ import logging
 from datetime import datetime
 from tube.cipher import Cipher
 from tube.helpers import regex_search
-from tube.parser import parse_for_object
 from typing import Any, Dict, Tuple, List
 from urllib.parse import parse_qs, urlparse, urlencode
+from tube.parser import parse_for_object, parse_for_all_objects
 from tube.exceptions import RegexMatchError, HTMLParseError, LiveStreamError
 
 
@@ -141,6 +141,36 @@ def get_ytplayer_config(html: str) -> Any:
     raise RegexMatchError(
         caller="get_ytplayer_config",
         pattern="config_patterns, setconfig_patterns"
+    )
+
+
+def get_ytcfg(html: str) -> str:
+    """Gets the complete ytcfg object.
+    It is built from several pieces,
+    so all matches must be found and join all the pieces together.
+    :param str html: The html content of the clock page.
+    :rtype: str
+    :returns: A substring of html containing coded manifest data.
+    """
+    ytcfg = {}
+    ytcfg_patterns = [
+        r"ytcfg\s=\s",
+        r"ytcfg\.set\("
+    ]
+    for pattern in ytcfg_patterns:
+        # Try each pattern consecutively and try to build a cohesive object
+        try:
+            found_objects = parse_for_all_objects(html, pattern)
+            for obj in found_objects:
+                ytcfg.update(obj)
+        except HTMLParseError:
+            continue
+
+    if len(ytcfg) > 0:
+        return ytcfg
+
+    raise RegexMatchError(
+        caller="get_ytcfg", pattern="ytcfg_pattenrs"
     )
 
 
