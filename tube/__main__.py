@@ -370,3 +370,41 @@ class YouTube:
         :rtype: str
         """
         return self.vid_info.get("videoDetails", {}).get("shortDescription")
+
+    @property
+    def rating(self) -> float:
+        """Get the video average rating.
+        :rtype: float
+        """
+        return self.vid_info.get("videoDetails", {}).get("averageRating")
+
+    @property
+    def length(self) -> int:
+        """Get the video length in seconds.
+        :rtype: int
+        """
+        return int(self.vid_info.get('videoDetails', {}).get('lengthSeconds'))
+
+    @property
+    def views(self) -> int:
+        """Get the number of the times the video has been viewed.
+        :rtype: int
+        """
+        return int(self.vid_info.get("videoDetails", {}).get("viewCount"))
+
+    @property
+    def author(self) -> str:
+        """Get the video author.
+        :rtype: str
+        """
+        if self._author:
+            return self._author
+        self._author = self.vid_info.get("videoDetails", {}).get(
+            "author", "unknown"
+        )
+        return self._author
+
+    @author.setter
+    def author(self, value):
+        """Set the video author."""
+        self._author = value
