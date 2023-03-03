@@ -14,6 +14,7 @@ from tube.metadata import YouTubeMetadata
 from tube import Stream, extract, request
 from typing import Optional, Callable, Any, Dict, List
 from tube.exceptions import (
+    TubeError,
     MembersOnly,
     ExtractError,
     VideoPrivate,
@@ -333,3 +334,39 @@ class YouTube:
         """
         self.check_availability()
         return StreamQuery(self.fmt_streams)
+
+    @property
+    def title(self) -> str:
+        """Get the video title.
+        :rtype: str
+        """
+        if self._title:
+            return self._title
+
+        try:
+            self._title = self.vid_info['videoDetails']['title']
+        except KeyError:
+            # Check_availability will raise the correct exception in
+            # most cases, if not, ask for a report.
+            self.check_availability()
+            raise TubeError(
+                (
+                    f'Exception when accessing the {self.watch_url} header. '
+                    'Please send an error message to \
+                        https://github.com/pchchv/tube.'
+                )
+            )
+
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        """Sets the title value."""
+        self._title = value
+
+    @property
+    def description(self) -> str:
+        """Get the video description.
+        :rtype: str
+        """
+        return self.vid_info.get("videoDetails", {}).get("shortDescription")
