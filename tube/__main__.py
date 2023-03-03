@@ -429,3 +429,25 @@ class YouTube:
         :rtype: str
         """
         return f'https://www.youtube.com/channel/{self.channel_id}'
+
+    @property
+    def metadata(self) -> Optional[YouTubeMetadata]:
+        """Get the metadata for the video.
+        :rtype: YouTubeMetadata
+        """
+        if self._metadata:
+            return self._metadata
+        else:
+            self._metadata = extract.metadata(self.initial_data)
+            return self._metadata
+
+    def register_on_progress_callback(
+            self,
+            func: Callable[[Any, bytes, int], None]):
+        """Register a download progress callback function post initialization.
+        :param callable func:
+            A callback function that takes ``stream``, ``chunk``,
+            and ``bytes_remaining`` as parameters.
+        :rtype: None
+        """
+        self.stream_monostate.on_progress = func
