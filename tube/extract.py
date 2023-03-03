@@ -260,3 +260,36 @@ def apply_signature(stream_manifest: Dict, vid_info: Dict, js: str) -> None:
 
         # 403 forbidden fix
         stream_manifest[i]["url"] = url
+
+
+def recording_available(watch_html):
+    """Check if live stream recording is available.
+    :param str watch_html: The html contents of the watch page.
+    :rtype: bool
+    :returns: Whether or not the content is private.
+    """
+    unavailable_strings = [
+        'This live stream recording is not available.'
+    ]
+    for string in unavailable_strings:
+        if string in watch_html:
+            return False
+    return True
+
+
+def is_private(watch_html):
+    """Check if content is private.
+    :param str watch_html: The html contents of the watch page.
+    :rtype: bool
+    :returns: Whether or not the content is private.
+    """
+    private_strings = [
+        "This is a private video. \
+            Please sign in to verify that you may see it.",
+        "\"simpleText\":\"Private video\"",
+        "This video is private."
+    ]
+    for string in private_strings:
+        if string in watch_html:
+            return True
+    return False
