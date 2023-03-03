@@ -1,5 +1,5 @@
 """This module provides a query interface for media streams and captions."""
-from tube import Caption
+from tube import Caption, Stream
 from tube.helpers import deprecated
 from typing import List, Optional, Callable
 from collections.abc import Mapping, Sequence
@@ -191,6 +191,64 @@ class StreamQuery(Sequence):
         :returns: A StreamQuery object with otf filtered streams
         """
         return self._filter([lambda s: s.is_otf == is_otf])
+
+    def get_by_itag(self, itag: int) -> Optional[Stream]:
+        """Get the corresponding :class:`Stream <Stream>` for the given itag.
+        :param int itag: YouTube format identifier code.
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            :class:`Stream <Stream>`
+            corresponding to the given itag or None if it is not found.
+        """
+        return self.itag_index.get(int(itag))
+
+    def get_by_resolution(self, resolution: str) -> Optional[Stream]:
+        """Get the corresponding :class:`Stream <Stream> for
+        a given resolution. The stream must be progressive mp4.
+        :param str resolution: The resolution of the video,
+            i.e. "720p", "480p", "360p", "240p", "144p".
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            :class:`Stream <Stream>`
+            corresponding to the given itag or None if it is not found.
+        """
+        return self.filter(
+            progressive=True, subtype="mp4", resolution=resolution
+        ).first()
+
+    def get_lowest_resolution(self) -> Optional[Stream]:
+        """Get the stream with the lowest resolution, which is progressive mp4.
+        :rtype: :class:`Stream <Stream>` or None
+        :returns: :class:`Stream <Stream>`
+            matching the given itag or None if not found.
+        """
+        return (
+            self.filter(progressive=True, subtype="mp4")
+            .order_by("resolution")
+            .first()
+        )
+
+    def get_highest_resolution(self) -> Optional[Stream]:
+        """Get highest resolution stream that is a progressive video.
+        :rtype: :class:`Stream <Stream>` or None
+        :returns: The :class:`Stream <Stream>`
+            matching the given itag or None if not found.
+        """
+        return self.filter(progressive=True).order_by("resolution").last()
+
+    def get_audio_only(self, subtype: str = "mp4") -> Optional[Stream]:
+        """Get highest bitrate audio stream for given codec (defaults to mp4)
+        :param str subtype: Audio subtype, defaults to mp4
+        :rtype: :class:`Stream <Stream>` or None
+        :returns:
+            The :class:`Stream <Stream>`
+            matching the given itag or None if not found.
+        """
+        return (
+            self.filter(only_audio=True, subtype=subtype)
+            .order_by("abr")
+            .last()
+        )
 
 
 class CaptionQuery(Mapping):
