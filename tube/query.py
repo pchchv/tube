@@ -250,6 +250,27 @@ class StreamQuery(Sequence):
             .last()
         )
 
+    def first(self) -> Optional[Stream]:
+        """Get the first :class:`Stream <Stream>` in the results.
+        :rtype: :class:`Stream <Stream>` or None
+        :returns: the first result of this query or
+            None if the result doesn't contain any streams.
+        """
+        try:
+            return self.fmt_streams[0]
+        except IndexError:
+            return None
+
+    def last(self):
+        """Get the last :class:`Stream <Stream>` in the results.
+        :rtype: :class:`Stream <Stream>` or None
+        :returns: Return the last result of this query or
+            None if the result doesn't contain any streams.
+        """
+        try:
+            return self.fmt_streams[-1]
+        except IndexError:
+            pass
 
 class CaptionQuery(Mapping):
     """Interface for querying the available captions."""
