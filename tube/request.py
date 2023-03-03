@@ -1,11 +1,19 @@
 """Implements a simple wrapper around urlopen."""
+import re
 import json
 import socket
+import logging
+import http.client
 from urllib import parse
 from functools import lru_cache
+from urllib.error import URLError
 from tube.helpers import regex_search
-from tube.exceptions import RegexMatchError
 from urllib.request import Request, urlopen
+from tube.exceptions import RegexMatchError, MaxRetriesExceeded
+
+
+logger = logging.getLogger(__name__)
+default_range_size = 9437184  # 9MB
 
 
 def _execute_request(
@@ -142,3 +150,110 @@ def post(
         timeout=timeout
     )
     return response.read().decode("utf-8")
+
+
+def seq_stream(
+    url,
+    timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+    max_retries=0
+):
+    """Read the response in sequence.
+    :param str url: The URL to perform the GET request for.
+    :rtype: Iterable[bytes]
+    """
+    # YouTube expects a request sequence number as part of the parameters.
+    split_url = parse.urlsplit(url)
+    base_url = '%s://%s/%s?' % (
+        split_url.scheme, split_url.netloc, split_url.path)
+
+    querys = dict(parse.parse_qsl(split_url.query))
+
+    # The 0th sequential query provides file headers that
+    # report information about how the file is segmented.
+    querys['sq'] = 0
+    url = base_url + parse.urlencode(querys)
+
+    segment_data = b''
+    for chunk in stream(url, timeout=timeout, max_retries=max_retries):
+        yield chunk
+        segment_data += chunk
+
+    # Then the header can be parsed to find the number of segments
+    stream_info = segment_data.split(b'\r\n')
+    segment_count_pattern = re.compile(b'Segment-Count: (\\d+)')
+    for line in stream_info:
+        match = segment_count_pattern.search(line)
+        if match:
+            segment_count = int(match.group(1).decode('utf-8'))
+
+    # Sequentially request these segments to create a file.
+    seq_num = 1
+    while seq_num <= segment_count:
+        # Create sequential request URL
+        querys['sq'] = seq_num
+        url = base_url + parse.urlencode(querys)
+
+        yield from stream(url, timeout=timeout, max_retries=max_retries)
+        seq_num += 1
+    return  # pylint: disable=R1711
+
+
+def stream(
+    url,
+    timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+    max_retries=0
+):
+    """Read the response in chunks.
+    :param str url: The URL to perform the GET request for.
+    :rtype: Iterable[bytes]
+    """
+    file_size: int = default_range_size  # fake filesize to start
+    downloaded = 0
+    while downloaded < file_size:
+        stop_pos = min(downloaded + default_range_size, file_size) - 1
+        range_header = f"bytes={downloaded}-{stop_pos}"
+        tries = 0
+
+        # Attempt to make the request multiple times as necessary.
+        while True:
+            # If the max retries is exceeded, raise an exception
+            if tries >= 1 + max_retries:
+                raise MaxRetriesExceeded()
+
+            # Try to execute the request, ignoring socket timeouts
+            try:
+                response = _execute_request(
+                    url,
+                    method="GET",
+                    headers={"Range": range_header},
+                    timeout=timeout
+                )
+            except URLError as e:
+                # Skip only timeout errors and
+                # raise any other URLError exceptions
+                if isinstance(e.reason, socket.timeout):
+                    pass
+                else:
+                    raise
+            except http.client.IncompleteRead:
+                # Allow retries on IncompleteRead errors for
+                # unreliable connections
+                pass
+            else:
+                # On a successful request, break from loop
+                break
+            tries += 1
+
+        if file_size == default_range_size:
+            try:
+                content_range = response.info()["Content-Range"]
+                file_size = int(content_range.split("/")[1])
+            except (KeyError, IndexError, ValueError) as e:
+                logger.error(e)
+        while True:
+            chunk = response.read()
+            if not chunk:
+                break
+            downloaded += len(chunk)
+            yield chunk
+    return  # pylint: disable=R1711
