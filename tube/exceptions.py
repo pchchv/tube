@@ -121,3 +121,20 @@ class AgeRestrictedError(VideoUnavailable):
     def error_string(self):
         return f"{self.video_id} is age restricted, \
             and can't be accessed without logging in."
+
+
+class MaxRetriesExceeded(TubeError):
+    """Maximum number of retries exceeded."""
+
+
+class VideoRegionBlocked(VideoUnavailable):
+    def __init__(self, video_id: str):
+        """
+        :param str video_id: A YouTube video identifier.
+        """
+        self.video_id = video_id
+        super().__init__(self.video_id)
+
+    @property
+    def error_string(self):
+        return f'{self.video_id} is not available in your region'
