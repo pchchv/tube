@@ -1,7 +1,7 @@
 """This module provides a query interface for media streams and captions."""
 from tube import Caption
-from typing import List, Optional
 from tube.helpers import deprecated
+from typing import List, Optional, Callable
 from collections.abc import Mapping, Sequence
 
 
@@ -132,6 +132,45 @@ class StreamQuery(Sequence):
             filters.append(lambda s: s.is_dash == is_dash)
 
         return self._filter(filters)
+
+    def _filter(self, filters: List[Callable]) -> "StreamQuery":
+        fmt_streams = self.fmt_streams
+        for filter_lambda in filters:
+            fmt_streams = filter(filter_lambda, fmt_streams)
+        return StreamQuery(list(fmt_streams))
+
+    def order_by(self, attribute_name: str) -> "StreamQuery":
+        """Apply sort order. Filters a stream that has no attribute.
+        :param str attribute_name: The name of the attribute to sort by.
+        """
+        has_attribute = [
+            s
+            for s in self.fmt_streams
+            if getattr(s, attribute_name) is not None
+        ]
+        # Check that the attributes have string values.
+        if has_attribute and isinstance(
+            getattr(has_attribute[0], attribute_name), str
+        ):
+            # Try to return a StreamQuery sorted by
+            # the integer representations of the values.
+            try:
+                return StreamQuery(
+                    sorted(
+                        has_attribute,
+                        key=lambda s: int(
+                            "".join(
+                                filter(str.isdigit, getattr(s, attribute_name))
+                            )
+                        ),  # type: ignore  # noqa: E501
+                    )
+                )
+            except ValueError:
+                pass
+
+        return StreamQuery(
+            sorted(has_attribute, key=lambda s: getattr(s, attribute_name))
+        )
 
 
 class CaptionQuery(Mapping):
