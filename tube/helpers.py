@@ -127,3 +127,26 @@ def deprecated(reason: str) -> Callable:
         return new_func1
 
     return decorator
+
+
+def setup_logger(level: int = logging.ERROR,
+                 log_filename: Optional[str] = None) -> None:
+    """Create a configured instance of logger.
+    :param int level: Describe the severity level of the logs to handle.
+    """
+    fmt = "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+    date_fmt = "%H:%M:%S"
+    formatter = logging.Formatter(fmt, datefmt=date_fmt)
+
+    # https://github.com/pytube/pytube/issues/163
+    logger = logging.getLogger("pytube")
+    logger.setLevel(level)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+
+    if log_filename is not None:
+        file_handler = logging.FileHandler(log_filename)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
