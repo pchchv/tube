@@ -112,3 +112,33 @@ def get(url, extra_headers=None, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
         extra_headers = {}
     response = _execute_request(url, headers=extra_headers, timeout=timeout)
     return response.read().decode("utf-8")
+
+
+def post(
+        url,
+        extra_headers=None,
+        data=None,
+        timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+    """Send an http POST request.
+    :param str url: The URL to perform the POST request for.
+    :param dict extra_headers: Extra headers to add to the request
+    :param dict data: The data to send on the POST request
+    :rtype: str
+    :returns: UTF-8 encoded string of response
+    """
+    # could technically be implemented in get,
+    # but to avoid confusion implemented like this
+    if extra_headers is None:
+        extra_headers = {}
+    if data is None:
+        data = {}
+    # required because the youtube servers are strict on content type
+    # raises HTTPError [400]: Bad Request otherwise
+    extra_headers.update({"Content-Type": "application/json"})
+    response = _execute_request(
+        url,
+        headers=extra_headers,
+        data=data,
+        timeout=timeout
+    )
+    return response.read().decode("utf-8")
