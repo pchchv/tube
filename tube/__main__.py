@@ -408,3 +408,24 @@ class YouTube:
     def author(self, value):
         """Set the video author."""
         self._author = value
+
+    @property
+    def keywords(self) -> List[str]:
+        """Get the video keywords.
+        :rtype: List[str]
+        """
+        return self.vid_info.get('videoDetails', {}).get('keywords', [])
+
+    @property
+    def channel_id(self) -> str:
+        """Get the video poster's channel id.
+        :rtype: str
+        """
+        return self.vid_info.get('videoDetails', {}).get('channelId', None)
+
+    @property
+    def channel_url(self) -> str:
+        """Construct the channel url for the video poster from the channel id.
+        :rtype: str
+        """
+        return f'https://www.youtube.com/channel/{self.channel_id}'
