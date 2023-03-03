@@ -1,8 +1,8 @@
 """This module provides a query interface for media streams and captions."""
 from tube import Caption, Stream
 from tube.helpers import deprecated
-from typing import List, Optional, Callable
 from collections.abc import Mapping, Sequence
+from typing import List, Optional, Callable, Union
 
 
 class StreamQuery(Sequence):
@@ -271,6 +271,33 @@ class StreamQuery(Sequence):
             return self.fmt_streams[-1]
         except IndexError:
             pass
+
+    @deprecated("Get the size of this list directly using len()")
+    def count(self, value: Optional[str] = None) -> int:  # pragma: no cover
+        """Get the count of items in the list.
+        :rtype: int
+        """
+        if value:
+            return self.fmt_streams.count(value)
+
+        return len(self)
+
+    @deprecated("This object can be treated as a list, all() is useless")
+    def all(self) -> List[Stream]:  # pragma: no cover
+        """Get all the results represented by this query as a list.
+        :rtype: list
+        """
+        return self.fmt_streams
+
+    def __getitem__(self, i: Union[slice, int]):
+        return self.fmt_streams[i]
+
+    def __len__(self) -> int:
+        return len(self.fmt_streams)
+
+    def __repr__(self) -> str:
+        return f"{self.fmt_streams}"
+
 
 class CaptionQuery(Mapping):
     """Interface for querying the available captions."""
