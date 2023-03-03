@@ -6,6 +6,7 @@ Tube offloads all the hard work to smaller peripheral modules and functions.
 
 """
 import tube
+from tube.query import StreamQuery
 from tube.monostate import Monostate
 from tube.innertube import InnerTube
 from tube.helpers import install_proxy
@@ -324,3 +325,11 @@ class YouTube:
     def publish_date(self, value):
         """Sets the publish date."""
         self._publish_date = value
+
+    @property
+    def streams(self) -> StreamQuery:
+        """Interface to query both adaptive (DASH) and progressive streams.
+        :rtype: :class:`StreamQuery <StreamQuery>`.
+        """
+        self.check_availability()
+        return StreamQuery(self.fmt_streams)
