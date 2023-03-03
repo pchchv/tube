@@ -5,13 +5,52 @@ from datetime import datetime
 from tube.cipher import Cipher
 from collections import OrderedDict
 from tube.helpers import regex_search
-from typing import Any, Dict, Tuple, List
+from tube.metadata import YouTubeMetadata
+from typing import Any, Dict, Tuple, List, Optional
 from urllib.parse import parse_qs, urlparse, urlencode, quote
 from tube.parser import parse_for_object, parse_for_all_objects
 from tube.exceptions import RegexMatchError, HTMLParseError, LiveStreamError
 
 
 logger = logging.getLogger(__name__)
+
+
+def metadata(initial_data) -> Optional[YouTubeMetadata]:
+    """Get the informational metadata for the video.
+    e.g.:
+    [
+        {
+            'Song': '강남스타일(Gangnam Style)',
+            'Artist': 'PSY',
+            'Album': 'PSY SIX RULES Pt.1',
+            'Licensed to YouTube by': 'YG Entertainment Inc. [...]'
+        }
+    ]
+    :rtype: YouTubeMetadata
+    """
+    try:
+        metadata_rows: List = initial_data["contents"][
+            "twoColumnWatchNextResults"]["results"]["results"][
+            "contents"][1]["videoSecondaryInfoRenderer"][
+            "metadataRowContainer"]["metadataRowContainerRenderer"]["rows"]
+    except (KeyError, IndexError):
+        # If there is an exception to access this data,
+        # it probably does not exist.
+        return YouTubeMetadata([])
+
+    # It looks like the rows only have
+    # "metadataRowRenderer" or "metadataRowHeaderRenderer",
+    # and only the former is of interest, so filter the others.
+    metadata_rows = filter(
+        lambda x: "metadataRowRenderer" in x.keys(),
+        metadata_rows
+    )
+
+    # Then access the metadataRowRenderer key in each item and
+    # build a metadata object from this new list
+    metadata_rows = [x["metadataRowRenderer"] for x in metadata_rows]
+
+    return YouTubeMetadata(metadata_rows)
 
 
 def publish_date(watch_html: str):
