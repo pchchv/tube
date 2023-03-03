@@ -293,3 +293,48 @@ def is_private(watch_html):
         if string in watch_html:
             return True
     return False
+
+
+def initial_player_response(watch_html: str) -> str:
+    """Extract the ytInitialPlayerResponse json from the watch_html page.
+    It basically contains the metadata needed to render the page when it loads,
+    such as video information, copyright notices, etc.
+    @param watch_html: Html of the watch page.
+    @return:
+    """
+    patterns = [
+        r"window\[['\"]ytInitialPlayerResponse['\"]]\s*=\s*",
+        r"ytInitialPlayerResponse\s*=\s*"
+    ]
+    for pattern in patterns:
+        try:
+            return parse_for_object(watch_html, pattern)
+        except HTMLParseError:
+            pass
+
+    raise RegexMatchError(
+        caller='initial_player_response',
+        pattern='initial_player_response_pattern'
+    )
+
+
+def playability_status(watch_html: str) -> Tuple:
+    """Returns the playback status and status explanation for the video.
+    For example, a video might have a status of LOGIN_REQUIRED and
+    an explanation of "This is a private video.
+    Please log in to make sure you can watch it."
+    This is the explanation and will be included in the media player's overlay.
+    :param str watch_html: html content of the watch page.
+    :rtype: bool
+    :returns: The playback status and reason for the video.
+    """
+    player_response = initial_player_response(watch_html)
+    status_dict = player_response.get('playabilityStatus', {})
+    if 'liveStreamability' in status_dict:
+        return 'LIVE_STREAM', 'Video is a live stream.'
+    if 'status' in status_dict:
+        if 'reason' in status_dict:
+            return status_dict['status'], [status_dict['reason']]
+        if 'messages' in status_dict:
+            return status_dict['status'], status_dict['messages']
+    return None, [None]
