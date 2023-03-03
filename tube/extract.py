@@ -3,9 +3,10 @@ import re
 import logging
 from datetime import datetime
 from tube.cipher import Cipher
+from collections import OrderedDict
 from tube.helpers import regex_search
 from typing import Any, Dict, Tuple, List
-from urllib.parse import parse_qs, urlparse, urlencode
+from urllib.parse import parse_qs, urlparse, urlencode, quote
 from tube.parser import parse_for_object, parse_for_all_objects
 from tube.exceptions import RegexMatchError, HTMLParseError, LiveStreamError
 
@@ -368,3 +369,102 @@ def playability_status(watch_html: str) -> Tuple:
         if 'messages' in status_dict:
             return status_dict['status'], status_dict['messages']
     return None, [None]
+
+
+def playlist_id(url: str) -> str:
+    """Extract the ``playlist_id`` from a YouTube url.
+    This function supports the following patterns:
+    - :samp:`https://youtube.com/playlist?list={playlist_id}`
+    - :samp:`https://youtube.com/watch?v={video_id}&list={playlist_id}`
+    :param str url: A YouTube url containing a playlist id.
+    :rtype: str
+    :returns: YouTube playlist id.
+    """
+    parsed = urlparse(url)
+    return parse_qs(parsed.query)['list'][0]
+
+
+def channel_name(url: str) -> str:
+    """Extract the ``channel_name`` or ``channel_id`` from a YouTube url.
+    This function supports the following patterns:
+    - :samp:`https://youtube.com/c/{channel_name}/*`
+    - :samp:`https://youtube.com/channel/{channel_id}/*
+    - :samp:`https://youtube.com/u/{channel_name}/*`
+    - :samp:`https://youtube.com/user/{channel_id}/*
+    :param str url: A YouTube url containing a channel name.
+    :rtype: str
+    :returns: YouTube channel name.
+    """
+    patterns = [
+        r"(?:\/(c)\/([%\d\w_\-]+)(\/.*)?)",
+        r"(?:\/(channel)\/([%\w\d_\-]+)(\/.*)?)",
+        r"(?:\/(u)\/([%\d\w_\-]+)(\/.*)?)",
+        r"(?:\/(user)\/([%\w\d_\-]+)(\/.*)?)"
+    ]
+    for pattern in patterns:
+        regex = re.compile(pattern)
+        function_match = regex.search(url)
+        if function_match:
+            logger.debug("finished regex search, matched: %s", pattern)
+            uri_style = function_match.group(1)
+            uri_identifier = function_match.group(2)
+            return f'/{uri_style}/{uri_identifier}'
+
+    raise RegexMatchError(
+        caller="channel_name", pattern="patterns"
+    )
+
+
+def video_info_url(video_id: str, watch_url: str) -> str:
+    """Construct the video_info url.
+    :param str video_id: A YouTube video identifier.
+    :param str watch_url: A YouTube watch url.
+    :rtype: str
+    :returns:
+        :samp:`https://youtube.com/get_video_info`
+        with necessary GET parameters.
+    """
+    params = OrderedDict(
+        [
+            ("video_id", video_id),
+            ("ps", "default"),
+            ("eurl", quote(watch_url)),
+            ("hl", "en_US"),
+            ("html5", "1"),
+            ("c", "TVHTML5"),
+            ("cver", "7.20201028"),
+        ]
+    )
+    return _video_info_url(params)
+
+
+def video_info_url_age_restricted(video_id: str, embed_html: str) -> str:
+    """Construct the video_info url.
+    :param str video_id: A YouTube video identifier.
+    :param str embed_html:
+        The html contents of the embed page (for age restricted videos).
+    :rtype: str
+    :returns:
+        :samp:`https://youtube.com/get_video_info`
+        with necessary GET parameters.
+    """
+    try:
+        sts = regex_search(r'"sts"\s*:\s*(\d+)', embed_html, group=1)
+    except RegexMatchError:
+        sts = ""
+    eurl = f"https://youtube.googleapis.com/v/{video_id}"
+    params = OrderedDict(
+        [
+            ("video_id", video_id),
+            ("eurl", eurl),
+            ("sts", sts),
+            ("html5", "1"),
+            ("c", "TVHTML5"),
+            ("cver", "7.20201028"),
+        ]
+    )
+    return _video_info_url(params)
+
+
+def _video_info_url(params: OrderedDict) -> str:
+    return "https://www.youtube.com/get_video_info?" + urlencode(params)
