@@ -172,6 +172,26 @@ class StreamQuery(Sequence):
             sorted(has_attribute, key=lambda s: getattr(s, attribute_name))
         )
 
+    def desc(self) -> "StreamQuery":
+        """Sort streams in descending order.
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        """
+        return StreamQuery(self.fmt_streams[::-1])
+
+    def asc(self) -> "StreamQuery":
+        """Sort streams in ascending order.
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        """
+        return self
+
+    def otf(self, is_otf: bool = False) -> "StreamQuery":
+        """Filter stream by OTF, useful if some streams have 404 URLs
+        :param bool is_otf: Set to False to retrieve only non-OTF streams
+        :rtype: :class:`StreamQuery <StreamQuery>`
+        :returns: A StreamQuery object with otf filtered streams
+        """
+        return self._filter([lambda s: s.is_otf == is_otf])
+
 
 class CaptionQuery(Mapping):
     """Interface for querying the available captions."""
