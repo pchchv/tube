@@ -1,7 +1,9 @@
 """Module to download a complete playlist from a youtube channel."""
+from tube import request
 from typing import Dict, Optional
 from collections.abc import Sequence
 from tube.helpers import install_proxy
+from tube.extract import playlist_id, get_ytcfg
 
 
 class Playlist(Sequence):
@@ -36,3 +38,27 @@ class Playlist(Sequence):
         :rtype: str
         """
         return f"https://www.youtube.com/playlist?list={self.playlist_id}"
+
+    @property
+    def html(self):
+        """Get the playlist page html.
+        :rtype: str
+        """
+        if self._html:
+            return self._html
+        self._html = request.get(self.playlist_url)
+        return self._html
+
+    @property
+    def ytcfg(self):
+        """Extract the ytcfg from the playlist page html.
+        :rtype: dict
+        """
+        if self._ytcfg:
+            return self._ytcfg
+        self._ytcfg = get_ytcfg(self.html)
+        return self._ytcfg
+
+    @staticmethod
+    def _video_url(watch_path: str):
+        return f"https://www.youtube.com{watch_path}"
