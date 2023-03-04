@@ -349,6 +349,39 @@ def ffmpeg_process(
     )
 
 
+def _perform_args_on_youtube(
+    youtube: YouTube, args: argparse.Namespace
+) -> None:
+    if len(sys.argv) == 2:  # no arguments parsed
+        download_highest_resolution_progressive(
+            youtube=youtube, resolution="highest", target=args.target
+        )
+    if args.list_captions:
+        _print_available_captions(youtube.captions)
+    if args.list:
+        display_streams(youtube)
+    if args.build_playback_report:
+        build_playback_report(youtube)
+    if args.itag:
+        download_by_itag(youtube=youtube, itag=args.itag, target=args.target)
+    if args.caption_code:
+        download_caption(
+            youtube=youtube, lang_code=args.caption_code, target=args.target
+        )
+    if args.resolution:
+        download_by_resolution(
+            youtube=youtube, resolution=args.resolution, target=args.target
+        )
+    if args.audio:
+        download_audio(
+            youtube=youtube, filetype=args.audio, target=args.target
+        )
+    if args.ffmpeg:
+        ffmpeg_process(
+            youtube=youtube, resolution=args.ffmpeg, target=args.target
+        )
+
+
 def download_by_itag(
     youtube: YouTube, itag: int, target: Optional[str] = None
 ) -> None:
