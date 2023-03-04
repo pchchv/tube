@@ -5,8 +5,10 @@ import gzip
 import json
 import shutil
 import argparse
+import subprocess  # nosec
 from datetime import datetime
 from typing import List, Optional
+from tube.helpers import safe_filename
 from tube.exceptions import VideoUnavailable
 from tube import __version__, Stream, YouTube, CaptionQuery
 
@@ -236,3 +238,113 @@ def build_playback_report(youtube: YouTube) -> None:
                 }
             ).encode("utf8"),
         )
+
+
+def _ffmpeg_downloader(
+    audio_stream: Stream, video_stream: Stream, target: str
+) -> None:
+    """Given a YouTube Stream object, finds the desired audio stream,
+    loads them both, assigns them a unique name, then uses ffmpeg to create a
+    new file with audio and video from the previously loaded files.
+    Then removes the original adaptive streams, leaving the combination.
+    :param Stream audio_stream:
+        A valid Stream object representing the audio to be loaded.
+    :param Stream video_stream:
+        A valid Stream object representing video for download.
+    :param Path target: A valid Path object
+    """
+    video_unique_name = _unique_name(
+        safe_filename(video_stream.title),
+        video_stream.subtype,
+        "video",
+        target=target,
+    )
+    audio_unique_name = _unique_name(
+        safe_filename(video_stream.title),
+        audio_stream.subtype,
+        "audio",
+        target=target,
+    )
+    _download(stream=video_stream, target=target, filename=video_unique_name)
+    print("Loading audio...")
+    _download(stream=audio_stream, target=target, filename=audio_unique_name)
+
+    video_path = os.path.join(
+        target, f"{video_unique_name}.{video_stream.subtype}"
+    )
+    audio_path = os.path.join(
+        target, f"{audio_unique_name}.{audio_stream.subtype}"
+    )
+    final_path = os.path.join(
+        target, f"{safe_filename(video_stream.title)}.{video_stream.subtype}"
+    )
+
+    subprocess.run(  # nosec
+        [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-i",
+            audio_path,
+            "-codec",
+            "copy",
+            final_path,
+        ]
+    )
+    os.unlink(video_path)
+    os.unlink(audio_path)
+
+
+def ffmpeg_process(
+    youtube: YouTube, resolution: str, target: Optional[str] = None
+) -> None:
+    """Determines the correct video stream to load,
+    then calls _ffmpeg_downloader.
+    :param YouTube youtube: A valid YouTube object.
+    :param str resolution: YouTube video resolution.
+    :param str target: Target directory for download
+    """
+    youtube.register_on_progress_callback(on_progress)
+    target = target or os.getcwd()
+
+    if resolution == "best":
+        highest_quality_stream = (
+            youtube.streams.filter(progressive=False)
+            .order_by("resolution")
+            .last()
+        )
+        mp4_stream = (
+            youtube.streams.filter(progressive=False, subtype="mp4")
+            .order_by("resolution")
+            .last()
+        )
+        if highest_quality_stream.resolution == mp4_stream.resolution:
+            video_stream = mp4_stream
+        else:
+            video_stream = highest_quality_stream
+    else:
+        video_stream = youtube.streams.filter(
+            progressive=False, resolution=resolution, subtype="mp4"
+        ).first()
+        if not video_stream:
+            video_stream = youtube.streams.filter(
+                progressive=False, resolution=resolution
+            ).first()
+    if video_stream is None:
+        print(f"Could not find a stream with resolution: {resolution}")
+        print("Try one of these:")
+        display_streams(youtube)
+        sys.exit()
+
+    audio_stream = youtube.streams.get_audio_only(video_stream.subtype)
+    if not audio_stream:
+        audio_stream = (
+            youtube.streams.filter(only_audio=True).order_by("abr").last()
+        )
+    if not audio_stream:
+        print("Could not find an audio only stream")
+        sys.exit()
+    _ffmpeg_downloader(
+        audio_stream=audio_stream, video_stream=video_stream, target=target
+    )
+
