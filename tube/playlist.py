@@ -19,3 +19,20 @@ class Playlist(Sequence):
         self._sidebar_info = None
 
         self._playlist_id = None
+
+    @property
+    def playlist_id(self):
+        """Get the playlist id.
+        :rtype: str
+        """
+        if self._playlist_id:
+            return self._playlist_id
+        self._playlist_id = playlist_id(self._input_url)
+        return self._playlist_id
+
+    @property
+    def playlist_url(self):
+        """Get the base playlist url.
+        :rtype: str
+        """
+        return f"https://www.youtube.com/playlist?list={self.playlist_id}"
