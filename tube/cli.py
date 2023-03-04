@@ -4,7 +4,7 @@ import shutil
 import argparse
 from typing import List, Optional
 from tube.exceptions import VideoUnavailable
-from tube import __version__, Stream, YouTube
+from tube import __version__, Stream, YouTube, CaptionQuery
 
 
 def _parse_args(
@@ -176,3 +176,17 @@ def download_highest_resolution_progressive(
             _download(stream, target=target)
         except KeyboardInterrupt:
             sys.exit()
+
+
+def _print_available_captions(captions: CaptionQuery) -> None:
+    print(
+        f"Available caption codes are: {', '.join(c.code for c in captions)}"
+    )
+
+
+def display_streams(youtube: YouTube) -> None:
+    """Probe YouTube video and lists its available formats.
+    :param YouTube youtube: A valid YouTube watch URL.
+    """
+    for stream in youtube.streams:
+        print(stream)
