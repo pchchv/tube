@@ -82,6 +82,21 @@ class Playlist(Sequence):
                 'playlistSidebarRenderer']['items']
             return self._sidebar_info
 
+    @property
+    def yt_api_key(self):
+        """Extract the INNERTUBE_API_KEY from the playlist ytcfg.
+        :rtype: str
+        """
+        return self.ytcfg['INNERTUBE_API_KEY']
+
+    @property
+    def owner_url(self):
+        """Create the channel url of the owner of the playlist.
+        :return: Playlist owner's channel url.
+        :rtype: str
+        """
+        return f'https://www.youtube.com/channel/{self.owner_id}'
+
     @staticmethod
     def _video_url(watch_path: str):
         return f"https://www.youtube.com{watch_path}"
