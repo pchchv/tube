@@ -1,9 +1,14 @@
 """Module to download a complete playlist from a youtube channel."""
+import json
+import logging
 from tube import request
-from typing import Dict, Optional
 from collections.abc import Sequence
 from tube.helpers import install_proxy
-from tube.extract import playlist_id, get_ytcfg
+from typing import Dict, Optional, Iterable, List
+from tube.extract import playlist_id, get_ytcfg, initial_data
+
+
+logger = logging.getLogger(__name__)
 
 
 class Playlist(Sequence):
@@ -96,6 +101,63 @@ class Playlist(Sequence):
         :rtype: str
         """
         return f'https://www.youtube.com/channel/{self.owner_id}'
+
+    def _paginate(
+        self, until_watch_id: Optional[str] = None
+    ) -> Iterable[List[str]]:
+        """Parse the video links from the page source,
+        yields the /watch?v= part from video link
+        :param until_watch_id Optional[str]:
+            YouTube Video watch id until which the playlist should be read.
+        :rtype: Iterable[List[str]]
+        :returns: Iterable of lists of YouTube watch ids
+        """
+        videos_urls, continuation = self._extract_videos(
+            json.dumps(initial_data(self.html))
+        )
+        if until_watch_id:
+            try:
+                trim_index = videos_urls.index(f"/watch?v={until_watch_id}")
+                yield videos_urls[:trim_index]
+                return
+            except ValueError:
+                pass
+        yield videos_urls
+
+        # Extract from a playlist only returns 100 videos at a time,
+        # if self._extract_videos returns a continue,
+        # there are more than 100 songs inside a playlist,
+        # so need to add further requests to gather all of them
+        if continuation:
+            load_more_url, headers, data = self._build_continuation_url(
+                continuation)
+        else:
+            load_more_url, headers, data = None, None, None
+
+        while load_more_url and headers and data:  # there is an url found
+            logger.debug("load more url: %s", load_more_url)
+            # requesting the next video page with the url generated from
+            # the previous page must be a post
+            req = request.post(load_more_url, extra_headers=headers, data=data)
+            # extract up to 100 songs from the page loaded
+            # returns another continuation if more videos are available
+            videos_urls, continuation = self._extract_videos(req)
+            if until_watch_id:
+                try:
+                    trim_index = videos_urls.index(
+                        f"/watch?v={until_watch_id}")
+                    yield videos_urls[:trim_index]
+                    return
+                except ValueError:
+                    pass
+            yield videos_urls
+
+            if continuation:
+                load_more_url, headers, data = self._build_continuation_url(
+                    continuation
+                )
+            else:
+                load_more_url, headers, data = None, None, None
 
     @staticmethod
     def _video_url(watch_path: str):
