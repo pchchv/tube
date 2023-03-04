@@ -348,3 +348,97 @@ def ffmpeg_process(
         audio_stream=audio_stream, video_stream=video_stream, target=target
     )
 
+
+def download_by_itag(
+    youtube: YouTube, itag: int, target: Optional[str] = None
+) -> None:
+    """Start downloading a YouTube video.
+    :param YouTube youtube: A valid YouTube object.
+    :param int itag: YouTube format identifier code.
+    :param str target: Target directory for download
+    """
+    stream = youtube.streams.get_by_itag(itag)
+    if stream is None:
+        print(f"Could not find a stream with itag: {itag}")
+        print("Try one of these:")
+        display_streams(youtube)
+        sys.exit()
+
+    youtube.register_on_progress_callback(on_progress)
+
+    try:
+        _download(stream, target=target)
+    except KeyboardInterrupt:
+        sys.exit()
+
+
+def download_by_resolution(
+    youtube: YouTube, resolution: str, target: Optional[str] = None
+) -> None:
+    """Start downloading a YouTube video.
+    :param YouTube youtube: A valid YouTube object.
+    :param str resolution: YouTube video resolution.
+    :param str target: Target directory for download
+    """
+    stream = youtube.streams.get_by_resolution(resolution)
+    if stream is None:
+        print(f"Could not find a stream with resolution: {resolution}")
+        print("Try one of these:")
+        display_streams(youtube)
+        sys.exit()
+
+    youtube.register_on_progress_callback(on_progress)
+
+    try:
+        _download(stream, target=target)
+    except KeyboardInterrupt:
+        sys.exit()
+
+
+def download_caption(
+    youtube: YouTube, lang_code: Optional[str], target: Optional[str] = None
+) -> None:
+    """Download a caption for the YouTube video.
+    :param YouTube youtube: A valid YouTube object.
+    :param str lang_code: Language code desired for caption file.
+        Prints available codes if the value is None or
+        the desired code is not available.
+    :param str target: Target directory for download
+    """
+    try:
+        caption = youtube.captions[lang_code]
+        downloaded_path = caption.download(
+            title=youtube.title, output_path=target
+        )
+        print(f"Saved caption file to: {downloaded_path}")
+    except KeyError:
+        print(f"Unable to find caption with code: {lang_code}")
+        _print_available_captions(youtube.captions)
+
+
+def download_audio(
+    youtube: YouTube, filetype: str, target: Optional[str] = None
+) -> None:
+    """ Given a filetype,
+    downloads the highest quality available audio stream for a YouTube video.
+    :param YouTube youtube: A valid YouTube object.
+    :param str filetype: Desired file format to download.
+    :param str target: Target directory for download
+    """
+    audio = (
+        youtube.streams.filter(only_audio=True, subtype=filetype)
+        .order_by("abr")
+        .last()
+    )
+
+    if audio is None:
+        print("No audio only stream found. Try one of these:")
+        display_streams(youtube)
+        sys.exit()
+
+    youtube.register_on_progress_callback(on_progress)
+
+    try:
+        _download(audio, target=target)
+    except KeyboardInterrupt:
+        sys.exit()
