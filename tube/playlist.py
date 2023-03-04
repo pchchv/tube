@@ -59,6 +59,29 @@ class Playlist(Sequence):
         self._ytcfg = get_ytcfg(self.html)
         return self._ytcfg
 
+    @property
+    def initial_data(self):
+        """Extract the initial data from the playlist page html.
+        :rtype: dict
+        """
+        if self._initial_data:
+            return self._initial_data
+        else:
+            self._initial_data = initial_data(self.html)
+            return self._initial_data
+
+    @property
+    def sidebar_info(self):
+        """Extract the sidebar info from the playlist page html.
+        :rtype: dict
+        """
+        if self._sidebar_info:
+            return self._sidebar_info
+        else:
+            self._sidebar_info = self.initial_data['sidebar'][
+                'playlistSidebarRenderer']['items']
+            return self._sidebar_info
+
     @staticmethod
     def _video_url(watch_path: str):
         return f"https://www.youtube.com{watch_path}"
