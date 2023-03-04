@@ -1,7 +1,11 @@
 """A simple command line application to download youtube videos."""
+import os
 import sys
+import gzip
+import json
 import shutil
 import argparse
+from datetime import datetime
 from typing import List, Optional
 from tube.exceptions import VideoUnavailable
 from tube import __version__, Stream, YouTube, CaptionQuery
@@ -190,3 +194,45 @@ def display_streams(youtube: YouTube) -> None:
     """
     for stream in youtube.streams:
         print(stream)
+
+
+def _unique_name(base: str, subtype: str, media_type: str, target: str) -> str:
+    """Given a base name, file format and target directory,
+    enerates a file name unique for that directory and file format.
+    :param str base: The specified base name.
+    :param str subtype: The video file type to be loaded.
+    :param str media_type:
+        The media_type of the file, i.e., "audio" or "video".
+    :param Path target: The target directory to download.
+    """
+    counter = 0
+    while True:
+        file_name = f"{base}_{media_type}_{counter}"
+        file_path = os.path.join(target, f"{file_name}.{subtype}")
+        if not os.path.exists(file_path):
+            return file_name
+        counter += 1
+
+
+def build_playback_report(youtube: YouTube) -> None:
+    """Serialize the request data to json for offline debugging.
+    :param YouTube youtube: A YouTube object.
+    """
+    ts = int(datetime.utcnow().timestamp())
+    fp = os.path.join(os.getcwd(), f"yt-video-{youtube.video_id}-{ts}.json.gz")
+
+    js = youtube.js
+    watch_html = youtube.watch_html
+    vid_info = youtube.vid_info
+
+    with gzip.open(fp, "wb") as fh:
+        fh.write(
+            json.dumps(
+                {
+                    "url": youtube.watch_url,
+                    "js": js,
+                    "watch_html": watch_html,
+                    "video_info": vid_info,
+                }
+            ).encode("utf8"),
+        )
