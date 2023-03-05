@@ -4,7 +4,7 @@ import logging
 from tube import request
 from collections.abc import Sequence
 from tube.helpers import install_proxy
-from typing import Dict, Optional, Iterable, List
+from typing import Dict, Optional, Iterable, List, Tuple
 from tube.extract import playlist_id, get_ytcfg, initial_data
 
 
@@ -177,6 +177,36 @@ class Playlist(Sequence):
         return self.sidebar_info[1]['playlistSidebarSecondaryInfoRenderer'][
             'videoOwner']['videoOwnerRenderer']['title']['runs'][0][
             'navigationEndpoint']['browseEndpoint']['browseId']
+
+    def _build_continuation_url(self, continuation: str) -> Tuple[str,
+                                                                  dict, dict]:
+        """Helper method for building the url and
+        headers needed to query the next video page
+        :param str:
+            Continued, extracted from the json response of the last page
+        :rtype: tuple[str, dict, dict]
+        :returns: A tuple of url and required headers for the next http request
+        """
+        return (
+            (
+                "https://www.youtube.com/youtubei/v1/browse?key="
+                f"{self.yt_api_key}"
+            ),
+            {
+                "X-YouTube-Client-Name": "1",
+                "X-YouTube-Client-Version": "2.20200720.00.02",
+            },
+            # extra data required for post request
+            {
+                "continuation": continuation,
+                "context": {
+                    "client": {
+                        "clientName": "WEB",
+                        "clientVersion": "2.20200720.00.02"
+                    }
+                }
+            }
+        )
 
     @staticmethod
     def _video_url(watch_path: str):
