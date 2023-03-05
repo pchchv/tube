@@ -2,6 +2,7 @@
 import json
 import logging
 from tube import request, YouTube
+from datetime import date, datetime
 from collections.abc import Sequence
 from tube.extract import playlist_id, get_ytcfg, initial_data
 from typing import Dict, Optional, Iterable, List, Tuple, Union
@@ -324,6 +325,34 @@ class Playlist(Sequence):
 
     def __repr__(self) -> str:
         return f"{repr(self.video_urls)}"
+
+    @property
+    @cache
+    def last_updated(self) -> Optional[date]:
+        """Retrieves the date the playlist was last updated.
+        For some playlists this will be a specific date,
+        which is returned as a datetime object. For other playlists,
+        it will be an approximate date, such as "1 week ago".
+        Due to the fact that this value is returned as a string,
+        Tube performs parsing where possible,
+        and returns a raw string where not possible.
+        :return: date last updated playlist,
+            if possible, otherwise a provided string.
+        :rtype: datetime.date
+        """
+        last_updated_text = self.sidebar_info[0][
+            'playlistSidebarPrimaryInfoRenderer'][
+            'stats'][2]['runs'][1]['text']
+        try:
+            date_components = last_updated_text.split()
+            month = date_components[0]
+            day = date_components[1].strip(',')
+            year = date_components[2]
+            return datetime.strptime(
+                f"{month} {day:0>2} {year}", "%b %d %Y"
+            ).date()
+        except (IndexError, KeyError):
+            return last_updated_text
 
     @staticmethod
     def _video_url(watch_path: str):
