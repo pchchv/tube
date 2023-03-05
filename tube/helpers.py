@@ -7,7 +7,7 @@ import functools
 from urllib import request
 from functools import lru_cache
 from tube.exceptions import RegexMatchError
-from typing import Optional, Dict, Callable, TypeVar
+from typing import Optional, Dict, Callable, TypeVar, Any, List
 
 
 logger = logging.getLogger(__name__)
@@ -150,3 +150,18 @@ def setup_logger(level: int = logging.ERROR,
         file_handler = logging.FileHandler(log_filename)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
+
+
+def uniqueify(duped_list: List) -> List:
+    """Remove duplicate items from a list, while maintaining list order.
+    :param List duped_list: List to remove duplicates from
+    :return List result: De-duplicated list
+    """
+    seen: Dict[Any, bool] = {}
+    result = []
+    for item in duped_list:
+        if item in seen:
+            continue
+        seen[item] = True
+        result.append(item)
+    return result
