@@ -4,13 +4,51 @@ import sys
 import gzip
 import json
 import shutil
+import logging
 import argparse
 import subprocess  # nosec
 from datetime import datetime
 from typing import List, Optional
-from tube.helpers import safe_filename
-from tube.exceptions import VideoUnavailable
+from tube.playlist import Playlist
+from tube.helpers import safe_filename, setup_logger
+from tube.exceptions import VideoUnavailable, TubeError
 from tube import __version__, Stream, YouTube, CaptionQuery
+
+
+logger = logging.getLogger(__name__)
+
+
+def main():
+    """Command line application to download youtube videos."""
+    # noinspection PyTypeChecker
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    args = _parse_args(parser)
+    if args.verbose:
+        log_filename = None
+        if args.logfile:
+            log_filename = args.logfile
+        setup_logger(logging.DEBUG, log_filename=log_filename)
+        logger.debug(f'tube version: {__version__}')
+
+    if not args.url or "youtu" not in args.url:
+        parser.print_help()
+        sys.exit(1)
+
+    if "/playlist" in args.url:
+        print("Loading playlist...")
+        playlist = Playlist(args.url)
+        if not args.target:
+            args.target = safe_filename(playlist.title)
+        for youtube_video in playlist.videos:
+            try:
+                _perform_args_on_youtube(youtube_video, args)
+            except TubeError as e:
+                print(f"There was an error with video: {youtube_video}")
+                print(e)
+    else:
+        print("Loading video...")
+        youtube = YouTube(args.url)
+        _perform_args_on_youtube(youtube, args)
 
 
 def _parse_args(
@@ -475,3 +513,7 @@ def download_audio(
         _download(audio, target=target)
     except KeyboardInterrupt:
         sys.exit()
+
+
+if __name__ == "__main__":
+    main()
