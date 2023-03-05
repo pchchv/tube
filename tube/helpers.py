@@ -16,6 +16,101 @@ logger = logging.getLogger(__name__)
 GenericType = TypeVar("GenericType")
 
 
+class DeferredGeneratorList:
+    """A wrapper class for delayed list generation.
+    Tube has some continuation generators that generate web calls,
+    which means that every time a full list is requested,
+    all of those web calls have to be at the same time,
+    which can cause slowdowns. This will allow the individual items
+    to be queried so that the slowdown occurs only as needed.
+    For example, it could be possible to iterate through list items
+    without requesting all of them at the same time.
+    This will increase the speed of playlist and channel interaction.
+    """
+    def __init__(self, generator):
+        """Construct a :class:`DeferredGeneratorList <DeferredGeneratorList>`.
+        :param generator generator:
+            The deferrable generator to create a wrapper for.
+        :param func func: (Optional)
+            A function to call on the generator items to produce the list.
+        """
+        self.gen = generator
+        self._elements = []
+
+    def __eq__(self, other):
+        """Need to mimic the behavior of the list for comparison."""
+        return list(self) == other
+
+    def __getitem__(self, key) -> Any:
+        """Only generate items as they're asked for."""
+        # Allow queries with indexes only.
+        if not isinstance(key, (int, slice)):
+            raise TypeError('Key must be either a slice or int.')
+
+        # Convert int keys to slice
+        key_slice = key
+        if isinstance(key, int):
+            key_slice = slice(key, key + 1, 1)
+
+        # Generate all elements up to the final item
+        while len(self._elements) < key_slice.stop:
+            try:
+                next_item = next(self.gen)
+            except StopIteration:
+                # If there are not enough elements to cut,
+                # an IndexError is issued
+                raise IndexError
+            else:
+                self._elements.append(next_item)
+
+        return self._elements[key]
+
+    def __iter__(self):
+        """Custom iterator for dynamically generated list."""
+        iter_index = 0
+        while True:
+            try:
+                curr_item = self[iter_index]
+            except IndexError:
+                return
+            else:
+                yield curr_item
+                iter_index += 1
+
+    def __next__(self) -> Any:
+        """Fetch next element in iterator."""
+        try:
+            curr_element = self[self.iter_index]
+        except IndexError:
+            raise StopIteration
+        self.iter_index += 1
+        return curr_element  # noqa:R504
+
+    def __len__(self) -> int:
+        """Return length of list of all items."""
+        self.generate_all()
+        return len(self._elements)
+
+    def __repr__(self) -> str:
+        """String representation of all items."""
+        self.generate_all()
+        return str(self._elements)
+
+    def __reversed__(self):
+        self.generate_all()
+        return self._elements[::-1]
+
+    def generate_all(self):
+        """Generate all items."""
+        while True:
+            try:
+                next_item = next(self.gen)
+            except StopIteration:
+                break
+            else:
+                self._elements.append(next_item)
+
+
 def regex_search(pattern: str, string: str, group: int) -> str:
     """Shortcut method to search a string for a given pattern.
     :param str pattern:
@@ -138,8 +233,8 @@ def setup_logger(level: int = logging.ERROR,
     date_fmt = "%H:%M:%S"
     formatter = logging.Formatter(fmt, datefmt=date_fmt)
 
-    # https://github.com/pytube/pytube/issues/163
-    logger = logging.getLogger("pytube")
+    # https://github.com/tube/tube/issues/163
+    logger = logging.getLogger("tube")
     logger.setLevel(level)
 
     stream_handler = logging.StreamHandler()
