@@ -275,6 +275,26 @@ class Playlist(Sequence):
             continuation,
         )
 
+    def trimmed(self, video_id: str) -> Iterable[str]:
+        """Retrieves a list of YouTube video URLs trimmed by a given video ID,
+        i.e. if the playlist has video IDs 1,2,3,4,
+        a call to trimmed(3) returns [1,2]
+        :type video_id: str
+            video ID to trim the returned list of playlist URLs at
+        :rtype: List[str]
+        :returns: List of video URLs from the playlist trimmed at the given ID
+        """
+        for page in self._paginate(until_watch_id=video_id):
+            yield from (self._video_url(watch_path) for watch_path in page)
+
+    def url_generator(self):
+        """Generator that yields video URLs.
+        :Yields: Video URLs
+        """
+        for page in self._paginate():
+            for video in page:
+                yield self._video_url(video)
+
     @staticmethod
     def _video_url(watch_path: str):
         return f"https://www.youtube.com{watch_path}"
