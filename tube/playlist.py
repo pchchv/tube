@@ -3,8 +3,8 @@ import json
 import logging
 from tube import request, YouTube
 from collections.abc import Sequence
-from typing import Dict, Optional, Iterable, List, Tuple
 from tube.extract import playlist_id, get_ytcfg, initial_data
+from typing import Dict, Optional, Iterable, List, Tuple, Union
 from tube.helpers import install_proxy, uniqueify, DeferredGeneratorList, cache
 
 
@@ -315,6 +315,15 @@ class Playlist(Sequence):
         :returns: List of YouTube
         """
         return DeferredGeneratorList(self.videos_generator())
+
+    def __getitem__(self, i: Union[slice, int]) -> Union[str, List[str]]:
+        return self.video_urls[i]
+
+    def __len__(self) -> int:
+        return len(self.video_urls)
+
+    def __repr__(self) -> str:
+        return f"{repr(self.video_urls)}"
 
     @staticmethod
     def _video_url(watch_path: str):
