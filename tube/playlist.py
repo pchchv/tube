@@ -354,6 +354,48 @@ class Playlist(Sequence):
         except (IndexError, KeyError):
             return last_updated_text
 
+    @property
+    @cache
+    def title(self) -> Optional[str]:
+        """Extract playlist title
+        :return: playlist title (name)
+        :rtype: Optional[str]
+        """
+        return self.sidebar_info[0]['playlistSidebarPrimaryInfoRenderer'][
+            'title']['runs'][0]['text']
+
+    @property
+    def description(self) -> str:
+        return self.sidebar_info[0]['playlistSidebarPrimaryInfoRenderer'][
+            'description']['simpleText']
+
+    @property
+    def length(self):
+        """Extract the number of videos in the playlist.
+        :return: Playlist video count
+        :rtype: int
+        """
+        count_text = self.sidebar_info[0][
+            'playlistSidebarPrimaryInfoRenderer'][
+            'stats'][0]['runs'][0]['text']
+        count_text = count_text.replace(',', '')
+        return int(count_text)
+
+    @property
+    def views(self):
+        """Extract view count for playlist.
+        :return: Playlist view count
+        :rtype: int
+        """
+        # "1,234,567 views"
+        views_text = self.sidebar_info[0][
+            'playlistSidebarPrimaryInfoRenderer']['stats'][1]['simpleText']
+        # "1,234,567"
+        count_text = views_text.split()[0]
+        # "1234567"
+        count_text = count_text.replace(',', '')
+        return int(count_text)
+
     @staticmethod
     def _video_url(watch_path: str):
         return f"https://www.youtube.com{watch_path}"
