@@ -3,7 +3,7 @@ import json
 import logging
 from tube import request
 from collections.abc import Sequence
-from tube.helpers import install_proxy
+from tube.helpers import install_proxy, uniqueify
 from typing import Dict, Optional, Iterable, List, Tuple
 from tube.extract import playlist_id, get_ytcfg, initial_data
 
@@ -206,6 +206,73 @@ class Playlist(Sequence):
                     }
                 }
             }
+        )
+
+    @staticmethod
+    def _extract_videos(raw_json: str) -> Tuple[List[str], Optional[str]]:
+        """Extracts videos from raw json page
+        :param str raw_json:
+            The input json extracted from the page or the last server response
+        :rtype: Tuple[List[str], Optional[str]]
+        :return:
+            A tuple containing a list of up to 100 video view IDs and
+            a continuation token if more videos are available.
+        """
+        initial_data = json.loads(raw_json)
+        try:
+            # is the json tree structure if the json was extracted from html
+            section_contents = initial_data["contents"][
+                "twoColumnBrowseResultsRenderer"][
+                "tabs"][0]["tabRenderer"]["content"][
+                "sectionListRenderer"]["contents"]
+            try:
+                # Playlist without submenus
+                important_content = section_contents[
+                    0]["itemSectionRenderer"][
+                    "contents"][0]["playlistVideoListRenderer"]
+            except (KeyError, IndexError, TypeError):
+                # Playlist with submenus
+                important_content = section_contents[
+                    1]["itemSectionRenderer"][
+                    "contents"][0]["playlistVideoListRenderer"]
+            videos = important_content["contents"]
+        except (KeyError, IndexError, TypeError):
+            try:
+                # is a json tree structure, if the json was directly sent by
+                # the server in the continuation response,
+                # is no longer a list and does not have a "response" key.
+                important_content = initial_data[
+                    'onResponseReceivedActions'][0][
+                    'appendContinuationItemsAction']['continuationItems']
+                videos = important_content
+            except (KeyError, IndexError, TypeError) as p:
+                logger.info(p)
+                return [], None
+
+        try:
+            continuation = videos[-1]['continuationItemRenderer'][
+                'continuationEndpoint'
+            ]['continuationCommand']['token']
+            videos = videos[:-1]
+        except (KeyError, IndexError):
+            # if there is an error, no continuation is available
+            continuation = None
+
+        # remove duplicates
+        return (
+            uniqueify(
+                list(
+                    # only extract the video ids from the video data
+                    map(
+                        lambda x: (
+                            f"/watch?v="
+                            f"{x['playlistVideoRenderer']['videoId']}"
+                        ),
+                        videos
+                    )
+                ),
+            ),
+            continuation,
         )
 
     @staticmethod
