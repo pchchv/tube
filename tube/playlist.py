@@ -1,11 +1,11 @@
 """Module to download a complete playlist from a youtube channel."""
 import json
 import logging
-from tube import request
+from tube import request, YouTube
 from collections.abc import Sequence
-from tube.helpers import install_proxy, uniqueify
 from typing import Dict, Optional, Iterable, List, Tuple
 from tube.extract import playlist_id, get_ytcfg, initial_data
+from tube.helpers import install_proxy, uniqueify, DeferredGeneratorList, cache
 
 
 logger = logging.getLogger(__name__)
@@ -294,6 +294,27 @@ class Playlist(Sequence):
         for page in self._paginate():
             for video in page:
                 yield self._video_url(video)
+
+    @property  # type: ignore
+    @cache
+    def video_urls(self) -> DeferredGeneratorList:
+        """Complete links of all the videos in playlist
+        :rtype: List[str]
+        :returns: List of video URLs
+        """
+        return DeferredGeneratorList(self.url_generator())
+
+    def videos_generator(self):
+        for url in self.video_urls:
+            yield YouTube(url)
+
+    @property
+    def videos(self) -> Iterable[YouTube]:
+        """Yields YouTube objects of videos in this playlist
+        :rtype: List[YouTube]
+        :returns: List of YouTube
+        """
+        return DeferredGeneratorList(self.videos_generator())
 
     @staticmethod
     def _video_url(watch_path: str):
