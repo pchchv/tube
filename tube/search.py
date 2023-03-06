@@ -51,3 +51,26 @@ class Search:
         self._results = videos
         self._current_continuation = continuation
         return self._results
+
+    def get_next_results(self):
+        """Use the saved continuation string to get the next set of results.
+        This method does not return results, but updates the results property.
+        """
+        if self._current_continuation:
+            videos, continuation = \
+                self.fetch_and_parse(self._current_continuation)
+            self._results.extend(videos)
+            self._current_continuation = continuation
+        else:
+            raise IndexError
+
+    def fetch_query(self, continuation=None):
+        """Getting raw results from API innertube.
+        :param str continuation: The continuation string for getting results.
+        :rtype: dict
+        :returns: Unprocessed json object returned by the innertube API.
+        """
+        query_results = self._innertube_client.search(self.query, continuation)
+        if not self._initial_results:
+            self._initial_results = query_results
+        return query_results  # noqa:R504
