@@ -29,3 +29,20 @@ class Channel(Playlist):
         self._community_html = None
         self._featured_channels_html = None
         self._about_html = None
+
+    @property
+    def channel_name(self):
+        """Get the name of the YouTube channel.
+        :rtype: str
+        """
+        return self.initial_data['metadata'][
+            'channelMetadataRenderer']['title']
+
+    @property
+    def channel_id(self):
+        """Get the ID of the YouTube channel.
+        This will return the underlying ID, not the vanity URL.
+        :rtype: str
+        """
+        return self.initial_data['metadata'][
+            'channelMetadataRenderer']['externalId']
