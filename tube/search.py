@@ -22,3 +22,32 @@ class Search:
         # so that new results are always returned when
         # get_next_results() is called
         self._current_continuation = None
+
+    @property
+    def completion_suggestions(self):
+        """Returns auto-complete query sentences.
+        :rtype: list
+        :returns: The list of autocomplete suggestions provided by
+            YouTube for this request.
+        """
+        if self._completion_suggestions:
+            return self._completion_suggestions
+        if self.results:
+            self._completion_suggestions = self._initial_results['refinements']
+        return self._completion_suggestions
+
+    @property
+    def results(self):
+        """Returns the results of the search.
+        The first call generates and returns the first set of results.
+        Additional results can be retrieved with ``.get_next_results()``.
+        :rtype: list
+        :returns: A list of YouTube objects.
+        """
+        if self._results:
+            return self._results
+
+        videos, continuation = self.fetch_and_parse()
+        self._results = videos
+        self._current_continuation = continuation
+        return self._results
