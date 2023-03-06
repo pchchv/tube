@@ -1,7 +1,13 @@
 """Module for interacting with a user's youtube channel."""
-from typing import Optional, Dict
+import json
+import logging
 from tube import extract, request
+from tube.helpers import uniqueify
 from tube.playlist import Playlist
+from typing import Optional, Dict, Tuple, List
+
+
+logger = logging.getLogger(__name__)
 
 
 class Channel(Playlist):
@@ -114,3 +120,69 @@ class Channel(Playlist):
         else:
             self._about_html = request.get(self.about_url)
             return self._about_html
+
+    @staticmethod
+    def _extract_videos(raw_json: str) -> Tuple[List[str], Optional[str]]:
+        """Extracts video from raw json page
+        :param str raw_json:
+            The input json extracted from the page or the last server response
+        :rtype: Tuple[List[str], Optional[str]]
+        :return:
+            A tuple containing a list of up to 100 video view IDs and
+            a continuation token if more videos are available.
+        """
+        initial_data = json.loads(raw_json)
+        # is the json tree structure if the json was extracted from html
+        try:
+            videos = initial_data["contents"][
+                "twoColumnBrowseResultsRenderer"][
+                "tabs"][1]["tabRenderer"]["content"][
+                "sectionListRenderer"]["contents"][0][
+                "itemSectionRenderer"]["contents"][0][
+                "gridRenderer"]["items"]
+        except (KeyError, IndexError, TypeError):
+            try:
+                # this is the structure of the json tree if the json was
+                # sent directly by the server in the continuation response
+                important_content = initial_data[1]['response'][
+                    'onResponseReceivedActions'][0][
+                    'appendContinuationItemsAction']['continuationItems']
+                videos = important_content
+            except (KeyError, IndexError, TypeError):
+                try:
+                    # is a json tree structure, if the json was
+                    # directly sent by the server in the continuation response,
+                    # is no longer a list and does not have a "response" key.
+                    important_content = initial_data[
+                        'onResponseReceivedActions'][0][
+                        'appendContinuationItemsAction']['continuationItems']
+                    videos = important_content
+                except (KeyError, IndexError, TypeError) as p:
+                    logger.info(p)
+                    return [], None
+
+        try:
+            continuation = videos[-1]['continuationItemRenderer'][
+                'continuationEndpoint'
+            ]['continuationCommand']['token']
+            videos = videos[:-1]
+        except (KeyError, IndexError):
+            # if there is an error, no continuation is available
+            continuation = None
+
+        # remove duplicates
+        return (
+            uniqueify(
+                list(
+                    # only extract the video ids from the video data
+                    map(
+                        lambda x: (
+                            f"/watch?v="
+                            f"{x['gridVideoRenderer']['videoId']}"
+                        ),
+                        videos
+                    )
+                ),
+            ),
+            continuation,
+        )
