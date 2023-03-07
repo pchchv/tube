@@ -9,7 +9,6 @@ __title__ = "tube"
 __author__ = "Evgenii Pochechuev"
 __email__ = "ipchchv@gmail.com"
 __license__ = "Apache-2.0 license"
-__link__ = "https://github.com/pchchv/tube"
 __js__ = None
 __js_url__ = None
 
