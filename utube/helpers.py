@@ -1,4 +1,4 @@
-"""Various helper functions implemented by tube."""
+"""Various helper functions implemented by utube."""
 import re
 import os
 import logging
@@ -6,7 +6,7 @@ import warnings
 import functools
 from urllib import request
 from functools import lru_cache
-from tube.exceptions import RegexMatchError
+from utube.exceptions import RegexMatchError
 from typing import Optional, Dict, Callable, TypeVar, Any, List
 
 
@@ -18,7 +18,7 @@ GenericType = TypeVar("GenericType")
 
 class DeferredGeneratorList:
     """A wrapper class for delayed list generation.
-    Tube has some continuation generators that generate web calls,
+    Utube has some continuation generators that generate web calls,
     which means that every time a full list is requested,
     all of those web calls have to be at the same time,
     which can cause slowdowns. This will allow the individual items
@@ -233,8 +233,7 @@ def setup_logger(level: int = logging.ERROR,
     date_fmt = "%H:%M:%S"
     formatter = logging.Formatter(fmt, datefmt=date_fmt)
 
-    # https://github.com/tube/tube/issues/163
-    logger = logging.getLogger("tube")
+    logger = logging.getLogger("utube")
     logger.setLevel(level)
 
     stream_handler = logging.StreamHandler()

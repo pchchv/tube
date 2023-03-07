@@ -7,9 +7,9 @@ import http.client
 from urllib import parse
 from functools import lru_cache
 from urllib.error import URLError
-from tube.helpers import regex_search
+from utube.helpers import regex_search
 from urllib.request import Request, urlopen
-from tube.exceptions import RegexMatchError, MaxRetriesExceeded
+from utube.exceptions import RegexMatchError, MaxRetriesExceeded
 
 
 logger = logging.getLogger(__name__)

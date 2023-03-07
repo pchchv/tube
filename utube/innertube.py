@@ -8,7 +8,7 @@ import json
 import time
 import pathlib
 from urllib import parse
-from tube import request
+from utube import request
 
 # YouTube on TV client secrets
 _client_id = ''  # TODO: Add env variables

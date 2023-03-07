@@ -10,11 +10,11 @@ from math import ceil
 from urllib import HTTPError
 from datetime import datetime
 from urllib.parse import parse_qs
-from tube import extract, request
-from tube.monostate import Monostate
-from tube.itags import get_format_profile
+from utube import extract, request
+from utube.monostate import Monostate
+from utube.itags import get_format_profile
 from typing import Dict, Optional, Tuple, BinaryIO
-from tube.helpers import safe_filename, target_directory
+from utube.helpers import safe_filename, target_directory
 
 
 logger = logging.getLogger(__name__)

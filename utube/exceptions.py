@@ -2,15 +2,15 @@
 from typing import Pattern, Union
 
 
-class TubeError(Exception):
-    """The basic tube exception that all others inherit.
+class UtubeError(Exception):
+    """The basic utube exception that all others inherit.
     This is done to avoid contaminating the built-in exceptions,
     which *could* lead to unintended errors being handled unexpectedly and
     incorrectly in the executor's code.
     """
 
 
-class ExtractError(TubeError):
+class ExtractError(UtubeError):
     """Data extraction based exception."""
 
 
@@ -29,11 +29,11 @@ class RegexMatchError(ExtractError):
         self.pattern = pattern
 
 
-class HTMLParseError(TubeError):
+class HTMLParseError(UtubeError):
     """HTML could not be parsed"""
 
 
-class VideoUnavailable(TubeError):
+class VideoUnavailable(UtubeError):
     """Base video unavailable error."""
     def __init__(self, video_id: str):
         """
@@ -123,7 +123,7 @@ class AgeRestrictedError(VideoUnavailable):
             and can't be accessed without logging in."
 
 
-class MaxRetriesExceeded(TubeError):
+class MaxRetriesExceeded(UtubeError):
     """Maximum number of retries exceeded."""
 
 

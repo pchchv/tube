@@ -1,12 +1,12 @@
 """Module to download a complete playlist from a youtube channel."""
 import json
 import logging
-from tube import request, YouTube
+from utube import request, YouTube
 from datetime import date, datetime
 from collections.abc import Sequence
-from tube.extract import playlist_id, get_ytcfg, initial_data
+from utube.extract import playlist_id, get_ytcfg, initial_data
 from typing import Dict, Optional, Iterable, List, Tuple, Union
-from tube.helpers import install_proxy, uniqueify, DeferredGeneratorList, cache
+from utube.helpers import install_proxy, uniqueify, DeferredGeneratorList, cache
 
 
 logger = logging.getLogger(__name__)

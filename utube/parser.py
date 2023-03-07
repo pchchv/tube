@@ -1,7 +1,7 @@
 import re
 import ast
 import json
-from tube.exceptions import HTMLParseError
+from utube.exceptions import HTMLParseError
 
 
 def parse_for_all_objects(html, preceding_regex):

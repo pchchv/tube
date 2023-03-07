@@ -9,10 +9,10 @@ import argparse
 import subprocess  # nosec
 from datetime import datetime
 from typing import List, Optional
-from tube.playlist import Playlist
-from tube.helpers import safe_filename, setup_logger
-from tube.exceptions import VideoUnavailable, TubeError
-from tube import __version__, Stream, YouTube, CaptionQuery
+from utube.playlist import Playlist
+from utube.helpers import safe_filename, setup_logger
+from utube.exceptions import VideoUnavailable, UtubeError
+from utube import __version__, Stream, YouTube, CaptionQuery
 
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def main():
         if args.logfile:
             log_filename = args.logfile
         setup_logger(logging.DEBUG, log_filename=log_filename)
-        logger.debug(f'tube version: {__version__}')
+        logger.debug(f'utube version: {__version__}')
 
     if not args.url or "youtu" not in args.url:
         parser.print_help()
@@ -42,7 +42,7 @@ def main():
         for youtube_video in playlist.videos:
             try:
                 _perform_args_on_youtube(youtube_video, args)
-            except TubeError as e:
+            except UtubeError as e:
                 print(f"There was an error with video: {youtube_video}")
                 print(e)
     else:
@@ -74,7 +74,7 @@ def _parse_args(
         "--list",
         action="store_true",
         help=(
-            "The list option causes tube cli to return a list of streams "
+            "The list option causes utube cli to return a list of streams "
             "available to download"
         ),
     )

@@ -1,9 +1,9 @@
 """Module for interacting with a user's youtube channel."""
 import json
 import logging
-from tube import extract, request
-from tube.helpers import uniqueify
-from tube.playlist import Playlist
+from utube import extract, request
+from utube.helpers import uniqueify
+from utube.playlist import Playlist
 from typing import Optional, Dict, Tuple, List
 
 
