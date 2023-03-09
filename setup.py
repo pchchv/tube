@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""This module contains setup instructions for utube."""
+"""This module contains setup instructions for utub3."""
 import os
 import codecs
 from setuptools import setup
@@ -9,21 +9,21 @@ here = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
     long_description = "\n" + fh.read()
 
-with open(os.path.join(here, "utube", "version.py")) as fp:
+with open(os.path.join(here, "utub3", "version.py")) as fp:
     exec(fp.read())
 
 setup(
-    name="utube",
+    name="utub3",
     version=__version__,  # noqa: F821
     author="Evgenii Pochechuev",
     author_email="ipchchv@gmail.com",
-    packages=["utube", ],
+    packages=["utub3", ],
     package_data={"": ["LICENSE"], },
-    url="https://github.com/pchchv/utube",
+    url="https://github.com/pchchv/utub3",
     license="Apache-2.0 license",
     entry_points={
         "console_scripts": [
-            "utube = utube.cli:main"], },
+            "utub3 = utub3.cli:main"], },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Console",
@@ -49,8 +49,8 @@ setup(
     zip_safe=True,
     python_requires=">=3.6",
     project_urls={
-        "Bug Reports": "https://github.com/pchchv/utube/issues",
-        "Read the Docs": "https://github.com/pchchv/utube/docs",
+        "Bug Reports": "https://github.com/pchchv/utub3/issues",
+        "Read the Docs": "https://github.com/pchchv/utub3/docs",
     },
     keywords=["youtube", "download", "video", "stream",],
 )

@@ -1,19 +1,19 @@
 """
-This module implements the basic developer interface for utube.
+This module implements the basic developer interface for utub3.
 The problem domain of the :class:`YouTube <YouTube> class
 focuses almost exclusively on the developer interface.
 Utube offloads all the hard work to smaller peripheral modules and functions.
 
 """
-import utube
-from utube.query import StreamQuery
-from utube.monostate import Monostate
-from utube.innertube import InnerTube
-from utube.helpers import install_proxy
-from utube.metadata import YouTubeMetadata
-from utube import Stream, extract, request
+import utub3
+from utub3.query import StreamQuery
+from utub3.monostate import Monostate
+from utub3.innertube import InnerTube
+from utub3.helpers import install_proxy
+from utub3.metadata import YouTubeMetadata
+from utub3 import Stream, extract, request
 from typing import Optional, Callable, Any, Dict, List
-from utube.exceptions import (
+from utub3.exceptions import (
     UtubeError,
     MembersOnly,
     ExtractError,
@@ -26,7 +26,7 @@ from utube.exceptions import (
 
 
 class YouTube:
-    """Core developer interface for utube."""
+    """Core developer interface for utub3."""
 
     def __init__(
         self,
@@ -49,7 +49,7 @@ class YouTube:
             flow loading progress events completion events.
         :param dict proxies:
             (Optional) Matching protocol and
-            proxy address to be used by utube.
+            proxy address to be used by utub3.
         :param bool use_oauth:
             (Optional) Invite the user to authenticate to YouTube.
             If allow_oauth_cache is set to True,
@@ -102,7 +102,7 @@ class YouTube:
         self.allow_oauth_cache = allow_oauth_cache
 
     def __repr__(self):
-        return f'<utube.__main__.YouTube object: videoId={self.video_id}>'
+        return f'<utub3.__main__.YouTube object: videoId={self.video_id}>'
 
     def __eq__(self, obj: object) -> bool:
         # Compare types and urls, if they are the same,
@@ -151,12 +151,12 @@ class YouTube:
         # If the js_url does not match the cached url,
         # retrieve the new js and refresh the cache,
         # otherwise load the cache.
-        if utube.__js_url__ != self.js_url:
+        if utub3.__js_url__ != self.js_url:
             self._js = request.get(self.js_url)
-            utube.__js__ = self._js
-            utube.__js_url__ = self.js_url
+            utub3.__js__ = self._js
+            utub3.__js_url__ = self.js_url
         else:
-            self._js = utube.__js__
+            self._js = utub3.__js__
 
         return self._js
 
@@ -196,8 +196,8 @@ class YouTube:
             # To force an update of the js-file, clear the cache and try again
             self._js = None
             self._js_url = None
-            utube.__js__ = None
-            utube.__js_url__ = None
+            utub3.__js__ = None
+            utub3.__js_url__ = None
             extract.apply_signature(stream_manifest, self.vid_info, self.js)
 
         # Create instances of :class:`Stream <Stream>`
@@ -278,7 +278,7 @@ class YouTube:
         self._vid_info = innertube_response
 
     @property
-    def caption_tracks(self) -> List[utube.Caption]:
+    def caption_tracks(self) -> List[utub3.Caption]:
         """Get a list of :class:`Caption <Caption>`.
         :rtype: List[Caption]
         """
@@ -287,14 +287,14 @@ class YouTube:
             .get("playerCaptionsTracklistRenderer", {})
             .get("captionTracks", [])
         )
-        return [utube.Caption(track) for track in raw_tracks]
+        return [utub3.Caption(track) for track in raw_tracks]
 
     @property
-    def captions(self) -> utube.CaptionQuery:
+    def captions(self) -> utub3.CaptionQuery:
         """Interface to query caption tracks.
         :rtype: :class:`CaptionQuery <CaptionQuery>`.
         """
-        return utube.CaptionQuery(self.caption_tracks)
+        return utub3.CaptionQuery(self.caption_tracks)
 
     @property
     def thumbnail_url(self) -> str:

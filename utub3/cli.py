@@ -9,17 +9,17 @@ import argparse
 import subprocess  # nosec
 from datetime import datetime
 from typing import List, Optional
-from utube.playlist import Playlist
-from utube.helpers import safe_filename, setup_logger
-from utube.exceptions import VideoUnavailable, UtubeError
-from utube import __version__, Stream, YouTube, CaptionQuery
+from utub3.playlist import Playlist
+from utub3.helpers import safe_filename, setup_logger
+from utub3.exceptions import VideoUnavailable, UtubeError
+from utub3 import __version__, Stream, YouTube, CaptionQuery
 
 
 logger = logging.getLogger(__name__)
 
 
 def main():
-    """Command line application to download youtube videos."""
+    """Command line application to download YouTube videos."""
     # noinspection PyTypeChecker
     parser = argparse.ArgumentParser(description=main.__doc__)
     args = _parse_args(parser)
@@ -28,7 +28,7 @@ def main():
         if args.logfile:
             log_filename = args.logfile
         setup_logger(logging.DEBUG, log_filename=log_filename)
-        logger.debug(f'utube version: {__version__}')
+        logger.debug(f'utub3 version: {__version__}')
 
     if not args.url or "youtu" not in args.url:
         parser.print_help()
@@ -74,7 +74,7 @@ def _parse_args(
         "--list",
         action="store_true",
         help=(
-            "The list option causes utube cli to return a list of streams "
+            "The list option causes utub3 cli to return a list of streams "
             "available to download"
         ),
     )

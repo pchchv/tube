@@ -1,6 +1,6 @@
 """This module provides a query interface for media streams and captions."""
-from utube import Caption, Stream
-from utube.helpers import deprecated
+from utub3 import Caption, Stream
+from utub3.helpers import deprecated
 from collections.abc import Mapping, Sequence
 from typing import List, Optional, Callable, Union
 

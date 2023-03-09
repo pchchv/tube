@@ -2,14 +2,14 @@
 import re
 import logging
 from datetime import datetime
-from utube.cipher import Cipher
+from utub3.cipher import Cipher
 from collections import OrderedDict
-from utube.helpers import regex_search
-from utube.metadata import YouTubeMetadata
+from utub3.helpers import regex_search
+from utub3.metadata import YouTubeMetadata
 from typing import Any, Dict, Tuple, List, Optional
 from urllib.parse import parse_qs, urlparse, urlencode, quote
-from utube.parser import parse_for_object, parse_for_all_objects
-from utube.exceptions import RegexMatchError, HTMLParseError, LiveStreamError
+from utub3.parser import parse_for_object, parse_for_all_objects
+from utub3.exceptions import RegexMatchError, HTMLParseError, LiveStreamError
 
 
 logger = logging.getLogger(__name__)

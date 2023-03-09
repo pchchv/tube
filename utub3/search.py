@@ -1,7 +1,7 @@
 """Module for interacting with YouTube search."""
 import logging
-from utube import YouTube
-from utube.innertube import InnerTube
+from utub3 import YouTube
+from utub3.innertube import InnerTube
 
 
 logger = logging.getLogger(__name__)
@@ -163,7 +163,7 @@ class Search:
                     logger.warn(f'Search term: {self.query}')
                     logger.warn(
                         'Please open an issue at '
-                        'https://github.com/pchchv/utube/issues '
+                        'https://github.com/pchchv/utub3/issues '
                         'and provide this log output.'
                     )
                     continue

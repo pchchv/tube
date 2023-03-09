@@ -1,12 +1,12 @@
-"""Module to download a complete playlist from a youtube channel."""
+"""Module to download a complete playlist from a YouTube channel."""
 import json
 import logging
-from utube import request, YouTube
+from utub3 import request, YouTube
 from datetime import date, datetime
 from collections.abc import Sequence
-from utube.extract import playlist_id, get_ytcfg, initial_data
+from utub3.extract import playlist_id, get_ytcfg, initial_data
 from typing import Dict, Optional, Iterable, List, Tuple, Union
-from utube.helpers import install_proxy, uniqueify, DeferredGeneratorList, cache
+from utub3.helpers import install_proxy, uniqueify, DeferredGeneratorList, cache
 
 
 logger = logging.getLogger(__name__)
@@ -334,7 +334,7 @@ class Playlist(Sequence):
         which is returned as a datetime object. For other playlists,
         it will be an approximate date, such as "1 week ago".
         Due to the fact that this value is returned as a string,
-        Tube performs parsing where possible,
+        Utub3 performs parsing where possible,
         and returns a raw string where not possible.
         :return: date last updated playlist,
             if possible, otherwise a provided string.

@@ -1,37 +1,37 @@
-# **utube**
+# **utub3**
 
-*YouTube* is the world's most popular video hosting service, and you might come across a situation where you need a video download script. There is a **utube** for this purpose.
+*YouTube* is the world's most popular video hosting service, and you might come across a situation where you need a video download script. There is a **utub3** for this purpose.
 
-**Utube** is a lightweight, dependency-free Python library and command-line utility for downloading *YouTube* Videos.
+**Utub3** is a lightweight, dependency-free Python library and command-line utility for downloading *YouTube* Videos.
 
-**Utube** also simplifies piping by allowing you to set callback functions for various download events, such as progress or completion.
+**Utub3** also simplifies piping by allowing you to set callback functions for various download events, such as progress or completion.
 
-In addition, **utube** includes a command line utility that allows you to download videos directly from the terminal.
+In addition, **utub3** includes a command line utility that allows you to download videos directly from the terminal.
 
 ## Quickstart
 
 ### Installation
 
-utube requires an installation of Python 3.6 or greater, as well as pip. (Pip is typically bundled with Python [installations](https://python.org/downloads).)
+utub3 requires an installation of Python 3.6 or greater, as well as pip. (Pip is typically bundled with Python [installations](https://python.org/downloads).)
 
 To install from PyPI with pip:
 
 ```bash
-$ python -m pip install utube
+$ python -m pip install utub3
 ```
 
 Sometimes, the PyPI release becomes slightly outdated. To install from the source with pip:
 
 ```bash
-$ python -m pip install git+https://github.com/pchchv/utube
+$ python -m pip install git+https://github.com/pchchv/utub3
 ```
 
-### Using utube in a Python script
+### Using utub3 in a Python script
 
 To download a video using the library in a script, you'll need to import the YouTube class from the library and pass an argument of the video URL. From there, you can access the streams and download them.
 
 ```python
- >>> from utube import YouTube
+ >>> from utub3 import YouTube
  >>> YouTube('https://youtu.be/HxCcKzRAGWk').streams.first().download()
  >>> yt = YouTube('http://youtube.com/watch?v=HxCcKzRAGWk')
  >>> yt.streams
@@ -46,10 +46,10 @@ To download a video using the library in a script, you'll need to import the You
 
 Using the CLI is remarkably straightforward as well. To download a video at the highest progressive quality, you can use the following command:
 ```bash
-$ utube https://youtube.com/watch?v=HxCcKzRAGWk
+$ utub3 https://youtube.com/watch?v=HxCcKzRAGWk
 ```
 
 You can also do the same for a playlist:
 ```bash
-$ utube https://www.youtube.com/watch?v=UP2XoGfhJ1Y&list=RDUP2XoGfhJ1Y&start_radio=1&t=3s
+$ utub3 https://www.youtube.com/watch?v=UP2XoGfhJ1Y&list=RDUP2XoGfhJ1Y&start_radio=1&t=3s
 ```

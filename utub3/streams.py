@@ -10,11 +10,11 @@ from math import ceil
 from urllib import HTTPError
 from datetime import datetime
 from urllib.parse import parse_qs
-from utube import extract, request
-from utube.monostate import Monostate
-from utube.itags import get_format_profile
+from utub3 import extract, request
+from utub3.monostate import Monostate
+from utub3.itags import get_format_profile
 from typing import Dict, Optional, Tuple, BinaryIO
-from utube.helpers import safe_filename, target_directory
+from utub3.helpers import safe_filename, target_directory
 
 
 logger = logging.getLogger(__name__)
@@ -215,7 +215,7 @@ class Stream:
     def title(self) -> str:
         """Get title of video
         :rtype: str
-        :returns: Youtube video title
+        :returns: YouTube video title
         """
         return self._monostate.title or "Unknown YouTube Video Title"
 

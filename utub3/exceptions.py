@@ -3,7 +3,7 @@ from typing import Pattern, Union
 
 
 class UtubeError(Exception):
-    """The basic utube exception that all others inherit.
+    """The basic utub3 exception that all others inherit.
     This is done to avoid contaminating the built-in exceptions,
     which *could* lead to unintended errors being handled unexpectedly and
     incorrectly in the executor's code.

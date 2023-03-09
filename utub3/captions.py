@@ -2,11 +2,11 @@ import os
 import math
 import time
 import json
-from utube import request
+from utub3 import request
 from html import unescape
 from typing import Dict, Optional
 import xml.etree.ElementTree as ElementTree
-from utube.helpers import safe_filename, target_directory
+from utub3.helpers import safe_filename, target_directory
 
 
 class Caption:
@@ -52,7 +52,7 @@ class Caption:
 
     def generate_srt_captions(self) -> str:
         """Generate "SubRip Subtitle" captions.
-        Takes the xml captions from :meth:`~utube.Caption.xml_captions` and
+        Takes the xml captions from :meth:`~utub3.Caption.xml_captions` and
         recompiles them into the "SubRip Subtitle" format.
         """
         return self.xml_caption_to_srt(self.xml_captions)

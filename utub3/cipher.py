@@ -16,10 +16,10 @@ and getting the encrypted signature and decoding it.
 import re
 import logging
 from itertools import chain
-from utube.helpers import regex_search, cache
-from utube.exceptions import RegexMatchError, ExtractError
+from utub3.helpers import regex_search, cache
+from utub3.exceptions import RegexMatchError, ExtractError
 from typing import Any, List, Dict, Callable, Optional, Tuple
-from utube.parser import find_object_from_startpoint, throttling_array_split
+from utub3.parser import find_object_from_startpoint, throttling_array_split
 
 
 logger = logging.getLogger(__name__)
