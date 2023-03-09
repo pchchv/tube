@@ -3,7 +3,6 @@
 import os
 import codecs
 from setuptools import setup
-from utube.version import __version__
 
 here = os.path.abspath(os.path.dirname(__file__))
 
