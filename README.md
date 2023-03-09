@@ -1,4 +1,8 @@
-# **utub3**
+<div align="center">
+
+# **utub3** <a href="https://pypi.org/project/utub3/"><img src="https://img.shields.io/pypi/v/utub3?style=flat-square" /></a>
+
+</div>
 
 *YouTube* is the world's most popular video hosting service, and you might come across a situation where you need a video download script. There is a **utub3** for this purpose.
 
