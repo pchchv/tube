@@ -95,3 +95,22 @@ def test_description(cipher_signature):
         "visit: https://rewind.youtube/about"
     )
     assert cipher_signature.description == expected
+
+
+def test_rating(cipher_signature):
+    """Test the rating value of a YouTube object.
+    This changes each time we rebuild the json files, so we want to use
+    an estimate of where it will be. The two values seen to make this
+    estimate were 2.073431 and 2.0860765. This represents a range of
+    ~0.007 below and ~0.006 above 2.08. Allowing for up to 0.02 in either
+    direction should provide a steady indicator of correctness.
+    """
+    assert abs(cipher_signature.rating - 2.08) < 0.02
+
+
+def test_length(cipher_signature):
+    assert cipher_signature.length == 337
+
+
+def test_views(cipher_signature):
+    assert cipher_signature.views >= 108531745
