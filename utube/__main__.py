@@ -349,7 +349,7 @@ class YouTube:
             # Check_availability will raise the correct exception in
             # most cases, if not, ask for a report.
             self.check_availability()
-            raise uTubeError(
+            raise UtubeError(
                 (
                     f'Exception when accessing the {self.watch_url} header. '
                     'Please send an error message to \
