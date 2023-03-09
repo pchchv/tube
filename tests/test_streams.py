@@ -1,7 +1,9 @@
 import os
+import random
 from unittest import mock
+from utub3 import request
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 
 @mock.patch("utub3.streams.request")
@@ -114,3 +116,94 @@ def test_length(cipher_signature):
 
 def test_views(cipher_signature):
     assert cipher_signature.views >= 108531745
+
+
+@mock.patch(
+    "utub3.request.head", MagicMock(return_value={"content-length": "6796391"})
+)
+@mock.patch(
+    "utub3.request.stream",
+    MagicMock(return_value=iter([str(random.getrandbits(8 * 1024))])),
+)
+def test_download(cipher_signature):
+    with mock.patch("utub3.streams.open", mock.mock_open(), create=True):
+        stream = cipher_signature.streams[0]
+        stream.download()
+
+
+@mock.patch(
+    "utub3.request.head", MagicMock(return_value={"content-length": "16384"})
+)
+@mock.patch(
+    "utub3.request.stream",
+    MagicMock(return_value=iter([str(random.getrandbits(8 * 1024))])),
+)
+@mock.patch("utub3.streams.target_directory", MagicMock(return_value="/target"))
+def test_download_with_prefix(cipher_signature):
+    with mock.patch("utub3.streams.open", mock.mock_open(), create=True):
+        stream = cipher_signature.streams[0]
+        file_path = stream.download(filename_prefix="prefix")
+        assert file_path == os.path.join(
+            "/target",
+            "prefixYouTube Rewind 2019 For the Record  YouTubeRewind.3gpp"
+        )
+
+
+@mock.patch(
+    "utub3.request.head", MagicMock(return_value={"content-length": "16384"})
+)
+@mock.patch(
+    "utub3.request.stream",
+    MagicMock(return_value=iter([str(random.getrandbits(8 * 1024))])),
+)
+@mock.patch("utub3.streams.target_directory", MagicMock(return_value="/target"))
+def test_download_with_filename(cipher_signature):
+    with mock.patch("utub3.streams.open", mock.mock_open(), create=True):
+        stream = cipher_signature.streams[0]
+        file_path = stream.download(filename="cool name bro")
+        assert file_path == os.path.join(
+            "/target",
+            "cool name bro"
+        )
+
+
+@mock.patch(
+    "utub3.request.head", MagicMock(return_value={"content-length": "16384"})
+)
+@mock.patch(
+    "utub3.request.stream",
+    MagicMock(return_value=iter([str(random.getrandbits(8 * 1024))])),
+)
+@mock.patch("utub3.streams.target_directory", MagicMock(return_value="/target"))
+@mock.patch("os.path.isfile", MagicMock(return_value=True))
+def test_download_with_existing(cipher_signature):
+    with mock.patch("utub3.streams.open", mock.mock_open(), create=True):
+        stream = cipher_signature.streams[0]
+        os.path.getsize = Mock(return_value=stream.filesize)
+        file_path = stream.download()
+        assert file_path == os.path.join(
+            "/target",
+            "YouTube Rewind 2019 For the Record  YouTubeRewind.3gpp"
+        )
+        assert not request.stream.called
+
+
+@mock.patch(
+    "utub3.request.head", MagicMock(return_value={"content-length": "16384"})
+)
+@mock.patch(
+    "utub3.request.stream",
+    MagicMock(return_value=iter([str(random.getrandbits(8 * 1024))])),
+)
+@mock.patch("utub3.streams.target_directory", MagicMock(return_value="/target"))
+@mock.patch("os.path.isfile", MagicMock(return_value=True))
+def test_download_with_existing_no_skip(cipher_signature):
+    with mock.patch("utub3.streams.open", mock.mock_open(), create=True):
+        stream = cipher_signature.streams[0]
+        os.path.getsize = Mock(return_value=stream.filesize)
+        file_path = stream.download(skip_existing=False)
+        assert file_path == os.path.join(
+            "/target",
+            "YouTube Rewind 2019 For the Record  YouTubeRewind.3gpp"
+        )
+        assert request.stream.called
