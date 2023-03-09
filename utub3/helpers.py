@@ -1,6 +1,8 @@
 """Various helper functions implemented by utub3."""
 import re
 import os
+import gzip
+import json
 import logging
 import warnings
 import functools
@@ -259,3 +261,56 @@ def uniqueify(duped_list: List) -> List:
         seen[item] = True
         result.append(item)
     return result
+
+
+def generate_all_html_json_mocks():
+    """Regenerate the video mock json files for all current test videos.
+    This should automatically output to the test/mocks directory.
+    """
+    test_vid_ids = [
+        '2lAe1cqCOXo',
+        '5YceQ8YqYMc',
+        'irauhITDrsE',
+        'm8uHb5jIGN8',
+        'QRS8MkLhQmM',
+        'WXxV9g7lsFE'
+    ]
+    for vid_id in test_vid_ids:
+        create_mock_html_json(vid_id)
+
+
+def create_mock_html_json(vid_id) -> Dict[str, Any]:
+    """Generate a json.gz file with sample html responses.
+    :param str vid_id
+        YouTube video id
+    :return dict data
+        Dict used to generate the json.gz file
+    """
+    from utub3 import YouTube
+    gzip_filename = 'yt-video-%s-html.json.gz' % vid_id
+
+    # Get the pytube directory in order to navigate to /tests/mocks
+    pytube_dir_path = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            os.path.pardir
+        )
+    )
+    pytube_mocks_path = os.path.join(pytube_dir_path, 'tests', 'mocks')
+    gzip_filepath = os.path.join(pytube_mocks_path, gzip_filename)
+
+    yt = YouTube(f'https://www.youtube.com/watch?v={vid_id}')
+    html_data = {
+        'url': yt.watch_url,
+        'js': yt.js,
+        'embed_html': yt.embed_html,
+        'watch_html': yt.watch_html,
+        'vid_info': yt.vid_info
+    }
+
+    logger.info(f'Outputing json.gz file to {gzip_filepath}')
+    with gzip.open(gzip_filepath, 'wb') as f:
+        f.write(json.dumps(html_data).encode('utf-8'))
+
+    return html_data
+
