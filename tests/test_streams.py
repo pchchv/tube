@@ -1,8 +1,8 @@
 import os
 import random
 from unittest import mock
-from utub3 import request
 from datetime import datetime
+from utub3 import request, Stream
 from unittest.mock import MagicMock, Mock
 
 
@@ -207,3 +207,51 @@ def test_download_with_existing_no_skip(cipher_signature):
             "YouTube Rewind 2019 For the Record  YouTubeRewind.3gpp"
         )
         assert request.stream.called
+
+
+def test_progressive_streams_return_includes_audio_track(cipher_signature):
+    stream = cipher_signature.streams.filter(progressive=True)[0]
+    assert stream.includes_audio_track
+
+
+def test_progressive_streams_return_includes_video_track(cipher_signature):
+    stream = cipher_signature.streams.filter(progressive=True)[0]
+    assert stream.includes_video_track
+
+
+@mock.patch(
+    "utub3.request.head", MagicMock(return_value={"content-length": "16384"})
+)
+@mock.patch(
+    "utub3.request.stream",
+    MagicMock(return_value=iter([str(random.getrandbits(8 * 1024))])),
+)
+def test_on_progress_hook(cipher_signature):
+    callback_fn = mock.MagicMock()
+    cipher_signature.register_on_progress_callback(callback_fn)
+
+    with mock.patch("utub3.streams.open", mock.mock_open(), create=True):
+        stream = cipher_signature.streams[0]
+        stream.download()
+    assert callback_fn.called
+    args, _ = callback_fn.call_args
+    assert len(args) == 3
+    stream, _, _ = args
+    assert isinstance(stream, Stream)
+
+
+@mock.patch(
+    "utub3.request.head", MagicMock(return_value={"content-length": "16384"})
+)
+@mock.patch(
+    "utub3.request.stream",
+    MagicMock(return_value=iter([str(random.getrandbits(8 * 1024))])),
+)
+def test_on_complete_hook(cipher_signature):
+    callback_fn = mock.MagicMock()
+    cipher_signature.register_on_complete_callback(callback_fn)
+
+    with mock.patch("utub3.streams.open", mock.mock_open(), create=True):
+        stream = cipher_signature.streams[0]
+        stream.download()
+    assert callback_fn.called
